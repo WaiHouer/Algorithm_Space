@@ -49,7 +49,7 @@ class Assignment_Problem:
         self.model.optimize()
 
         # 输出
-        print(f'最小成本：{self.model.ObjVal}')
+        print(f'最大评分：{self.model.ObjVal}')
         # for var in self.model.getVars():
         #     if var.x > 0:
         #         print(var.varName,var.x)
