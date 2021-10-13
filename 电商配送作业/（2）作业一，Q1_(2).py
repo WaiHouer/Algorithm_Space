@@ -16,7 +16,7 @@ class Assignment_Problem:
 
     def algorithm(self):
         # 目标函数
-        self.model.setObjective(sum(self.x[i,j] * self.cij[i][j] for i in range(3) for j in range(3)), GRB.MINIMIZE)
+        self.model.setObjective(sum(self.x[i, j] * self.cij[i][j] for i in range(3) for j in range(3)), GRB.MINIMIZE)
 
         # 约束
         self.model.addConstrs(sum(self.x[i, j] for j in range(3)) == 1 for i in range(3))
@@ -31,10 +31,10 @@ class Assignment_Problem:
         #     if var.x > 0:
         #         print(var.varName,var.x)
         # print(self.x)
-        solution = self.model.getAttr('x',self.x)  # 字典格式，key为(0,0)格式
+        solution = self.model.getAttr('x', self.x)  # 字典格式，key为(0,0)格式
         for i in solution:
             if solution[i] > 0:
-                print(f'x{i} = ',f'任务{f"{i[0]}"} -> 快递员{f"{i[1]}"}',solution[i])
+                print(f'x{i} = ', f'任务{f"{i[0]}"} -> 快递员{f"{i[1]}"}', solution[i])
 
 
 if __name__ == '__main__':

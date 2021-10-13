@@ -17,7 +17,6 @@ s.t.
 ∑j xij - ∑j xji == -1 , i = n
             xij >= 0  , i,j=0,1,2,3,4,5,6
 '''
-# from gurobipy import *
 from gurobipy import GRB
 import gurobipy as gp
 
@@ -44,16 +43,19 @@ class Shortest_Route_Problem:
 
     def algorithm(self):
         # 目标函数
-        self.model.setObjective(sum(self.x[i,j] * self.cij[i][j] for i in range(7) for j in range(7)), GRB.MINIMIZE)
+        self.model.setObjective(sum(self.x[i, j] * self.cij[i][j] for i in range(7) for j in range(7)), GRB.MINIMIZE)
 
         # 约束
         for i in range(6):
             if i == 0:
-                self.model.addConstr(sum(self.x[i,j] for j in range(7)) - sum(self.x[j,i] for j in range(7)) == 1)
+                self.model.addConstr(sum(self.x[i, j] for j in range(7)) - sum(self.x[j, i] for j in range(7)) == 1,
+                                     name='')
             elif i == 6:
-                self.model.addConstr(sum(self.x[i,j] for j in range(7)) - sum(self.x[j,i] for j in range(7)) == -1)
+                self.model.addConstr(sum(self.x[i, j] for j in range(7)) - sum(self.x[j, i] for j in range(7)) == -1,
+                                     name='')
             else:
-                self.model.addConstr(sum(self.x[i,j] for j in range(7)) - sum(self.x[j,i] for j in range(7)) == 0)
+                self.model.addConstr(sum(self.x[i, j] for j in range(7)) - sum(self.x[j, i] for j in range(7)) == 0,
+                                     name='')
 
         # 求解
         self.model.optimize()
@@ -64,10 +66,10 @@ class Shortest_Route_Problem:
         #     if var.x > 0:
         #         print(var.varName,var.x)
         # print(self.x)
-        solution = self.model.getAttr('x',self.x)  # 字典格式，key为(0,0)格式
+        solution = self.model.getAttr('x', self.x)  # 字典格式，key为(0,0)格式
         for i in solution:
             if solution[i] > 0:
-                print(f'x{i} = ',f'{self.city_name[f"{i[0]}"]} -> {self.city_name[f"{i[1]}"]}',solution[i])
+                print(f'x{i} = ', f'{self.city_name[f"{i[0]}"]} -> {self.city_name[f"{i[1]}"]}', solution[i])
 
 
 if __name__ == '__main__':
