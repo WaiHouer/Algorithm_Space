@@ -46,7 +46,7 @@ class Shortest_Route_Problem:
         self.model.setObjective(sum(self.x[i, j] * self.cij[i][j] for i in range(7) for j in range(7)), GRB.MINIMIZE)
 
         # 约束
-        for i in range(6):
+        for i in range(7):
             if i == 0:
                 self.model.addConstr(sum(self.x[i, j] for j in range(7)) - sum(self.x[j, i] for j in range(7)) == 1,
                                      name='')
