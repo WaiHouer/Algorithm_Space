@@ -16,5 +16,5 @@ MLPRegressor(activation='logistic', alpha=1e-06, batch_size='auto',
        solver='adam', tol=0.0001, validation_fraction=0.1, verbose=False,
        warm_start=False)
 y2 = clf.predict(X1)
-plt.scatter(X,y)#画图
+plt.scatter(X, y)#画图
 plt.plot(X,y2,c="red")
