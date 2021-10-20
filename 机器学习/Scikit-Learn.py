@@ -1,20 +1,19 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.neural_network import MLPRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor
+import matplotlib.pyplot as mp, random
+# 创建样本
+a = [199, 188, 170, 157, 118, 99, 69, 44, 22, 1, 5, 9, 15, 21, 30, 40, 50, 60, 70, 79, 88, 97, 99, 98, 70, 46, 39, 33]
+for e, y in enumerate((a, [a[i//2]+random.randint(0, 30) for i in range(len(a)*2)])):
+    # 待测集
+    ly, n = len(y), 2000
+    w = [[i / n * 1.2 - .1] for i in range(n)]
+    # 建模、拟合、预测
+    model = GaussianProcessRegressor()
+    model.fit([[i/ly]for i in range(ly)], y)
+    z = model.predict(w)
+    # 可视化
+    mp.subplot(1, 2, e + 1)
+    mp.yticks(())
+    mp.bar([i/ly for i in range(ly)], y, width=.7/ly)
+    mp.scatter(w, z, s=1, color='r')
+mp.show()
 
-X = np.linspace(-3.14, 3.14, 400)
-X1 = X.reshape(-1,1)
-y = np.sin(X) + 0.3*np.random.rand(len(X))
-
-clf = MLPRegressor(alpha=1e-6,hidden_layer_sizes=(3, 2), random_state=1, max_iter=100000,activation='logistic')
-clf.fit(X1, y)
-MLPRegressor(activation='logistic', alpha=1e-06, batch_size='auto',
-       beta_1=0.9, beta_2=0.999, early_stopping=False, epsilon=1e-08,
-       hidden_layer_sizes=(3, 2), learning_rate='constant',
-       learning_rate_init=0.001, max_iter=100000, momentum=0.9,
-       nesterovs_momentum=True, power_t=0.5, random_state=1, shuffle=True,
-       solver='adam', tol=0.0001, validation_fraction=0.1, verbose=False,
-       warm_start=False)
-y2 = clf.predict(X1)
-plt.scatter(X, y)#画图
-plt.plot(X,y2,c="red")
