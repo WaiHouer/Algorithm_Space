@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.kernel_ridge import KernelRidge
+from sklearn.neural_network import MLPRegressor
 from openpyxl import load_workbook
-'''内核（多项式内核）岭回归：可以用'''
+'''神经网络-多层感知机回归器：可以用'''
 
 
-class KRR:  # 内核（多项式内核）岭回归
+class LBFGS_MLP_Regression:  # 神经网络-多层感知机回归器
     def __init__(self,file_name):
-        self.book = load_workbook(file_name)
+        self.book = load_workbook(file_name)  # 读取数据
         self.sheet = self.book['湖北']
         self.num = 30  # 历史数据数量
         self.num_future = 30  # 需要预测的未来天数
@@ -35,8 +35,10 @@ class KRR:  # 内核（多项式内核）岭回归
         # 注意：此时 x_train、x_test 的格式变成了array，列为特征（即多项式各项），行为样本
         # y_train不用管，[y,y,y,y,y,y,y,y,y]这种形式就可以
 
-        # kernel：指定内核；C：正则化系数；gamma：核系数；epsilon：损失值与实际值之间的距离
-        reg = KernelRidge(kernel='poly')
+        # solver：权重优化求解器，对于小型数据集，“ lbfgs”可以收敛得更快并且性能更好
+        # hidden_layer_sizes：第i个元素代表第i个隐藏层中的神经元数量
+        # 小数据集不要用默认的“adam”
+        reg = MLPRegressor(hidden_layer_sizes=(10,10), solver='lbfgs')
         reg.fit(x_train, y_train)  # 用训练集训练
 
         y_predict_train = reg.predict(x_train)  # 对训练集拟合一下，导出y值
@@ -53,4 +55,4 @@ class KRR:  # 内核（多项式内核）岭回归
 
 
 if __name__ == '__main__':
-    KRR('疫情人数各省市数据统计列表.xlsx')
+    LBFGS_MLP_Regression('疫情人数各省市数据统计列表.xlsx')
