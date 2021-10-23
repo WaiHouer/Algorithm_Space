@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import BayesianRidge
 from openpyxl import load_workbook
+'''贝叶斯岭回归：可以用'''
 
 
 class Bayesian_Ridge_Regression:  # 贝叶斯岭回归
@@ -21,13 +22,13 @@ class Bayesian_Ridge_Regression:  # 贝叶斯岭回归
             self.y[i] = self.sheet.cell(4+i,4).value
 
         for i in range(len(self.y_test)):  # 录入表格数据
-            self.y_test[i] = self.sheet.cell(self.num_future+4+i,4).value
+            self.y_test[i] = self.sheet.cell(self.num+4+i,4).value
 
         self.regression()
 
     def regression(self):  # 回归算法主体
 
-        n_order = 3  # 多项式最高次幂
+        n_order = 2  # 多项式最高次幂
         x_train = np.vander(self.x, n_order+1, increasing=True)  # 生成最高n_order次幂的，升序的，范德蒙矩阵
         y_train = self.y
         x_test = np.vander(self.x_test, n_order+1, increasing=True)
