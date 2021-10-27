@@ -39,9 +39,9 @@ class RBF_SVR:
 
         y_predict_future = reg.predict(x_test)
 
-        plt.scatter(self.x+self.x_test, self.y+self.y_test, color='lightblue', label='actual num')
-        plt.plot(self.x, y_predict_train, color='red', label='fit curve')
-        plt.plot(self.x_test, y_predict_future, color='palegreen', label='predict curve')
+        plt.scatter(self.x+self.x_test, self.y+self.y_test, color='lightblue', label='actual num', marker='.')
+        plt.plot(self.x, y_predict_train, color='red', label='fit curve', marker='.')
+        plt.plot(self.x_test, y_predict_future, color='palegreen', label='predict curve', marker='.')
 
         plt.legend()
         plt.show()

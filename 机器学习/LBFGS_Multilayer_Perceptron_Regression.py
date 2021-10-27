@@ -38,7 +38,7 @@ class LBFGS_MLP_Regression:  # 神经网络-多层感知机回归器
         # solver：权重优化求解器，对于小型数据集，“ lbfgs”可以收敛得更快并且性能更好
         # hidden_layer_sizes：第i个元素代表第i个隐藏层中的神经元数量
         # 小数据集不要用默认的“adam”
-        reg = MLPRegressor(hidden_layer_sizes=(10,10), solver='lbfgs')
+        reg = MLPRegressor(hidden_layer_sizes=(10,10), solver='lbfgs', max_iter=10000)
         reg.fit(x_train, y_train)  # 用训练集训练
 
         y_predict_train = reg.predict(x_train)  # 对训练集拟合一下，导出y值
@@ -46,9 +46,9 @@ class LBFGS_MLP_Regression:  # 神经网络-多层感知机回归器
         y_predict_future = reg.predict(x_test)  # 对测试集拟合一下，导出y值
 
         # 画图
-        plt.scatter(self.x+self.x_test, self.y+self.y_test, color='lightblue', label='actual num')
-        plt.plot(self.x, y_predict_train, color='red', label='fit curve')
-        plt.plot(self.x_test, y_predict_future, color='palegreen', label='predict curve')
+        plt.scatter(self.x+self.x_test, self.y+self.y_test, color='lightblue', label='actual num', marker='.')
+        plt.plot(self.x, y_predict_train, color='red', label='fit curve', marker='.')
+        plt.plot(self.x_test, y_predict_future, color='palegreen', label='predict curve', marker='.')
 
         plt.legend()
         plt.show()
