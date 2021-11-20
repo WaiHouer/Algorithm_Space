@@ -59,7 +59,7 @@ class KRR:  # 内核（多项式内核）岭回归
         plt.plot(tem_train, y_predict_train, color='red', label='Fitting_curve', marker='.')
         # plt.plot(tem_future, y_predict_future, color='palegreen', label='predict curve', marker='.')
 
-        plt.text(0.6, 18000, f'MSE of Bayesian_Ridge_Regression:\n\n{mse_train}', fontsize=15,
+        plt.text(0.6, 18000, f'MSE of Kernel_Ridge_Regression:\n\n{mse_train}', fontsize=15,
                  bbox={'boxstyle': 'round', 'facecolor': 'lightskyblue', 'alpha': 0.5})
 
         for i in range(len(tem_all)):

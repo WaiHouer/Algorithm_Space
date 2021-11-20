@@ -47,7 +47,7 @@ class Bayesian_Ridge_Regression:  # 贝叶斯岭回归
         # y_train不用管，[y,y,y,y,y,y,y,y,y]这种形式就可以
 
         # tol：如果w收敛，则停止算法；fit_intercept：是否计算该模型的截距；compute_score：如果为True，则计算模型每一步的目标函数
-        reg = BayesianRidge(tol=1e-6, fit_intercept=False, compute_score=True)
+        reg = BayesianRidge(tol=1e-6, fit_intercept=False, compute_score=True,n_iter=300)
         reg.fit(x_train, y_train)  # 用训练集训练
 
         y_predict_train = reg.predict(x_train)  # 对训练集拟合一下，导出y值
