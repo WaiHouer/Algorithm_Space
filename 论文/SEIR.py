@@ -51,7 +51,7 @@ class SEIR:  # SEIR传染病模型
     def picture(self):
         t_range = np.arange(0, self.t_num)  # 时间跨度，分成一天份
 
-        # plt.plot(t_range, self.S, color='darkblue', label='Susceptible', marker='.')  # 画出易感者
+        plt.plot(t_range, self.S, color='darkblue', label='Susceptible', marker='.')  # 画出易感者
         plt.plot(t_range, self.E, color='orange', label='Exposed', marker='.')  # 画出潜伏着
         plt.plot(t_range, self.I, color='red', label='Infection', marker='.')  # 画出感染者
         plt.plot(t_range, self.R, color='green', label='Recovery', marker='.')  # 画出治愈者

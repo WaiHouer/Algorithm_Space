@@ -20,6 +20,7 @@ class Multipeak_judge:
         self.m_0 = 500
         self.m_threshold = 505
 
+        # 由于要计算新增，是做差，所以此两个list第一个元素为None
         self.i_hat = [None for t in range(self.t_num)]
         self.i_act = [None for t in range(self.t_num)]
         for t in range(self.start_point,self.t_num):
@@ -35,6 +36,9 @@ class Multipeak_judge:
         self.z_calculate()
         self.p_calculate()
         self.m_calculate()
+        # 目前有点问题：
+        # （1）不应该一口气全算出来z，p，m，因为涉及到重置问题，不一样（改一下即可）
+        # （2）没加m的下限值（加上即可）
 
         self.Model.picture()
 
