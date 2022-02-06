@@ -47,6 +47,7 @@ class SEIR:  # SEIR传染病模型
             self.I[i] = self.I[i-1] + self.alpha * self.E[i-1] - self.gamma * self.I[i-1]
 
             self.R[i] = self.R[i-1] + self.gamma * self.I[i-1]
+        print(self.S)
 
     def picture(self):
         t_range = np.arange(0, self.t_num)  # 时间跨度，分成一天份
