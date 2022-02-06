@@ -22,19 +22,19 @@ class SEAQURD:
         self.q = 0.75
         self.c_0 = 0.8
 
-        self.region.append(Region('0-武汉',[1,45],10000,9900,100,0,0,0,0,0))
+        self.region.append(Region('0-region',[1,45],10000,9900,100,0,0,0,0,0))
         self.beta_e.append(0.21), self.beta_a.append(0.35), self.beta_u.append(0.4)
         self.alpha.append(0.1)
         self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
         self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
 
-        self.region.append(Region('1-宜昌',[3,7],8900,8800,100,0,0,0,0,0))
+        self.region.append(Region('1-region',[3,7],8900,8800,100,0,0,0,0,0))
         self.beta_e.append(0.23), self.beta_a.append(0.30), self.beta_u.append(0.32)
         self.alpha.append(0.1)
         self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
         self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
 
-        self.region.append(Region('2-孝感',[11,30],9500,9400,100,0,0,0,0,0))
+        self.region.append(Region('2-region',[11,30],9500,9400,100,0,0,0,0,0))
         self.beta_e.append(0.24), self.beta_a.append(0.32), self.beta_u.append(0.35)
         self.alpha.append(0.1)
         self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
@@ -58,6 +58,8 @@ class SEAQURD:
             self.U[i][0] = self.region[i].U
             self.R[i][0] = self.region[i].R
             self.D[i][0] = self.region[i].D
+
+        self.I = np.zeros((len(self.region), self.T))  # 即：所有感染者数量 = A + Q + U
 
         # 两种生成距离倒数矩阵的方式：1：按照坐标计算，2：直接指定
         self.dist = self.dist_type_1()
@@ -97,6 +99,7 @@ class SEAQURD:
                 self.D[i][t] = self.D[i][t-1] + self.delta_a[i] * self.A[i][t-1] \
                                + self.delta_q[i] * self.Q[i][t-1] \
                                + self.delta_u[i] * self.U[i][t-1]
+        self.I = self.A + self.Q +self.U
 
     def m_calculate(self):
         for i in range(len(self.region)):
@@ -132,18 +135,20 @@ class SEAQURD:
         for i in range(len(self.region)):
             plt.subplot(2,2,i+1)
 
-            plt.plot(t_range, self.S[i], color='darkblue', label='Susceptible', marker='.')  # 画出易感者
-            plt.plot(t_range, self.E[i], color='orange', label='Exposed', marker='.')  # 画出潜伏着
-            plt.plot(t_range, self.A[i], color='red', label='Infection', marker='.')  # 画出无症状感染者
-            plt.plot(t_range, self.Q[i], color='purple', label='Infection', marker='.')  # 画出有症状-隔离者
-            plt.plot(t_range, self.U[i], color='olivedrab', label='Infection', marker='.')  # 画出有症状-未隔离者
-            plt.plot(t_range, self.R[i], color='green', label='Recovery', marker='.')  # 画出治愈者
-            plt.plot(t_range, self.D[i], color='black', label='Infection', marker='.')  # 画出死亡者
+            plt.plot(t_range, self.S[i], color='darkblue', label='S', marker='.')  # 画出易感者
+            plt.plot(t_range, self.E[i], color='orange', label='E', marker='.')  # 画出潜伏着
+            plt.plot(t_range, self.A[i], color='red', label='A', marker='.')  # 画出无症状感染者
+            plt.plot(t_range, self.Q[i], color='purple', label='Q', marker='.')  # 画出有症状-隔离者
+            plt.plot(t_range, self.U[i], color='olivedrab', label='U', marker='.')  # 画出有症状-未隔离者
+            plt.plot(t_range, self.R[i], color='green', label='R', marker='.')  # 画出治愈者
+            plt.plot(t_range, self.D[i], color='black', label='D', marker='.')  # 画出死亡者
+
+            plt.plot(t_range, self.I[i], color='darkred', label='I = A + Q + U', marker='.')  # 画出死亡者
 
             # plt.scatter(t_range, self.actual, color='lightblue', label='actual num')  # 画出真实感染数量
 
-            plt.title('SEAQURD Model')
-            plt.legend(fontsize=15, facecolor='lightyellow')
+            plt.title(f'{self.region[i].name}')
+            plt.legend(fontsize=10, facecolor='lightyellow')
             plt.xlabel('Day')
             plt.ylabel('Number')
         plt.show()
