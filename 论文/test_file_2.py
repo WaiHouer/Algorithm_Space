@@ -2,16 +2,16 @@ import scipy.integrate as spi
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
-from scipy.optimize import leastsq
+from scipy.optimize import curve_fit
 
+t_num = 30  # 时间长度
+S = [0 for i in range(t_num)]
+E = [0 for i in range(t_num)]
+I = [0 for i in range(t_num)]
+R = [0 for i in range(t_num)]
 
-t_num = 60  # 时间长度
-
-def Fun(p0, S, E, I):  # 定义拟合函数形式
-    beta_i, beta_e, alpha, gamma = p0
-    # alpha = 0.1
-    # beta_i, beta_e, gamma = p0
-    for i in range(1, t_num):
+def Fun(I, beta_i, beta_e, alpha, gamma):  # 定义拟合函数形式
+    for i in range(1, 30):
         S[i] = S[i - 1] - beta_i * I[i - 1] * S[i - 1] / 150000 \
                     - beta_e * E[i - 1] * S[i - 1] / 150000
 
@@ -23,14 +23,14 @@ def Fun(p0, S, E, I):  # 定义拟合函数形式
     return I
 
 
-def error(p0, S, E, I, y):  # 拟合残差
-    return np.array(Fun(p0, S, E, I)) - np.array(y)
+# def error(p0, S, E, I, y):  # 拟合残差
+#     return np.array(Fun(p0, S, E, I)) - np.array(y)
 
 
 def main():
     book = load_workbook('疫情人数各省市数据统计列表.xlsx')  # 读取数据
     sheet = book['湖北']
-    t_num = 60  # 时间长度
+    t_num = 30  # 时间长度
 
     actual = []  # 真实的感染人数，读取数据即可
     for i in range(t_num):
@@ -54,10 +54,10 @@ def main():
     alpha = 0.1  # 潜伏期为10天
     gamma = 0.05  # 恢复率
 
-    p0 = [beta_i, beta_e, alpha, gamma]  # 拟合的初始参数设置
-    # p0 = [beta_i, beta_e, gamma]  # 拟合的初始参数设置
-    para = leastsq(error, p0, args=(S, E, I, actual))  # 进行拟合
-    I_fit = Fun(para[0], S, E, I)  # 画出拟合后的曲线
+    I_fit = Fun(I, beta_i, beta_e, alpha, gamma)  # 画出拟合后的曲线
+    popt, pcov = curve_fit(Fun, I, I_fit)
+    print(popt)
+
 
     t_range = np.arange(0, t_num)  # 时间跨度，分成一天份
     plt.plot(t_range, I_fit, label='Fitted curve')
@@ -65,7 +65,6 @@ def main():
     plt.show()
     print(actual)
     print(I_fit)
-    print(para[0])
 
 
 if __name__ == '__main__':
