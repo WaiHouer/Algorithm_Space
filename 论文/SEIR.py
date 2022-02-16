@@ -1,8 +1,6 @@
-import scipy.integrate as spi
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
-from scipy.optimize import leastsq
 '''S：易感者、E：潜伏者、I：感染者、R：治愈者'''
 
 
@@ -29,10 +27,10 @@ class SEIR:  # SEIR传染病模型
         self.R[0] = 0  # 恢复者
         self.S[0] = self.total_population - self.I[0] - self.E[0] - self.R[0]  # 易感者
 
-        self.beta_i = 2.788  # 感染者传播率（即：接触数r*感染率）
-        self.beta_e = -0.02163  # 潜伏者传播率（即：接触数r*感染率）
-        self.alpha = 0.04617  # 潜伏期为10天
-        self.gamma = 0.029495  # 恢复率
+        self.beta_i = 0.6166705369207879  # 感染者传播率（即：接触数r*感染率）
+        self.beta_e = 0.3779508896534194  # 潜伏者传播率（即：接触数r*感染率）
+        self.alpha = 0.044910060076917224  # 潜伏期为10天
+        self.gamma = 0.02835410545944275  # 恢复率
 
         self.algorithm()
         self.picture()
@@ -52,7 +50,7 @@ class SEIR:  # SEIR传染病模型
     def picture(self):
         t_range = np.arange(0, self.t_num)  # 时间跨度，分成一天份
 
-        # plt.plot(t_range, self.S, color='darkblue', label='Susceptible', marker='.')  # 画出易感者
+        plt.plot(t_range, self.S, color='darkblue', label='Susceptible', marker='.')  # 画出易感者
         plt.plot(t_range, self.E, color='orange', label='Exposed', marker='.')  # 画出潜伏着
         plt.plot(t_range, self.I, color='red', label='Infection', marker='.')  # 画出感染者
         plt.plot(t_range, self.R, color='green', label='Recovery', marker='.')  # 画出治愈者
