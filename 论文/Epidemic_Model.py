@@ -105,7 +105,7 @@ class Epidemic_Model:  # 完整传染病模型
 
         plt.scatter(t_range, self.actual, color='lightblue', label='actual num')  # 画出真实感染数量
 
-        for t in self.new_flow_node:
+        for t in self.new_flow_node:  # 画出浪潮分割节点
             plt.plot([t, t], [0, 50000])
 
         plt.title('SEIR Model')
