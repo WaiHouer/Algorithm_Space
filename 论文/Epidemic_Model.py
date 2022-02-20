@@ -10,7 +10,7 @@ from SEIR import SEIR
 from Multipeak_judge import Multipeak_judge
 
 
-class Epidemic_Model:  # 完整传染病模型
+class Epidemic_Model:  # 完整传染病模型（试一下哈
     def __init__(self,file_name):
         self.file_name = file_name
         self.book = load_workbook(file_name)
