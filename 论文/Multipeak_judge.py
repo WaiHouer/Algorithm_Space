@@ -5,22 +5,23 @@ from SEIR import SEIR
 import math
 
 
-class Multipeak_judge:
-    def __init__(self,actual,fit_S,fit_I):
-        self.t_num = len(actual)
+class Multipeak_judge:  # 多峰判断
+    def __init__(self,actual,fit_S,fit_I):  # 传入：真实感染人数（切片），对应区间拟合S、I
+        self.t_num = len(actual)  # 本次需要判断的区间长度
 
         self.actual = actual
         self.S = fit_S
         self.I = fit_I
 
-        self.exist_multipeak = 'no'
-        self.peak_node = 0
+        self.exist_multipeak = 'no'  # 本次是否发现新浪潮
+        self.peak_node = 0  # 该区间内，新浪潮的节点位置
 
-        self.m_s = 1.3
-        self.m_0 = 200
-        self.m_threshold = 3000
+        # 参数设置（论文并未涉及如何调参，以下是我自己编的）
+        self.m_s = 1.3  # s：灵敏度系数
+        self.m_0 = 200  # m_0：m的迭代初值
+        self.m_threshold = 3000  # m的新浪潮判断阈值
 
-        # 由于要计算新增，是做差，所以此两个list第一个元素为-1,代表无意义
+        # 由于要计算新增，是做差，所以此两个list第一个元素为-1,代表无意义，即：[-1,xx,xx,xx...]
         self.i_hat = [-1 for t in range(self.t_num)]
         self.i_act = [-1 for t in range(self.t_num)]
         for t in range(1,self.t_num):
@@ -29,56 +30,68 @@ class Multipeak_judge:
         # print(self.i_act)
         # print(self.i_hat)
 
-        self.z = [-1 for t in range(self.t_num)]
-        self.p = [-1 for t in range(self.t_num)]
-        self.m = [-1 for t in range(self.t_num)]
+        # 初始化z,p,m的存放列表
+        self.z = [-1 for t in range(self.t_num)]  # 与i_hat同理，第一个元素无意义，[-1,xx,xx,xx...]
+        self.p = [-1 for t in range(self.t_num)]  # p的计算需要z，且分母需要做差，则前两个元素无意义，[-1,-1,xx,xx,xx...]
+        self.m = [-1 for t in range(self.t_num)]  # m的计算需要p，且有初值m_0，则第一个元素无意义，第二元素为m_0，[-1,m_0,xx,xx...]
 
-        self.algorithm()
-        print(self.peak_node)
+        self.algorithm()  # 算法主体
 
-    def algorithm(self):
-        self.z_calculate()
-        p_start = 1
-        for t in range(2,self.t_num):
+    def algorithm(self):  # 一口气算出z => 进入循环：算出p，算出m，m超过阈值则发现新浪潮，m低于1则舍弃前部分数据重新计算
+        # （1）一口气算出全部的z值
+        self.z_calculate()  # z计算函数
+
+        # （2）进入循环，依次计算p值和m值
+
+        p_start = 1  # p和m值计算需要利用历史数据，起点默认从第一个有意义的点开始 / 但是当m<1时，为了舍弃前面的数据，通过将此起点向后更新来实现
+
+        for t in range(2,self.t_num):  # p值[-1,-1,xx...]从第3个元素开始需要迭代
+
+            # （2-1）计算p值，传入：历史数据起点，本次计算的时间点
             self.p_calculate(p_start,t)
 
+            # （2-2）计算m值，传入：历史数据起点，本次计算的时间点
             self.m_calculate(p_start,t)
-            if self.m[t] > self.m_threshold:
+
+            # （2-3）判断改时间节点t的m值
+            if self.m[t] > self.m_threshold:  # 若大于阈值，则代表找到了新浪潮节点
                 print('找到',t, self.m)
-                self.exist_multipeak = 'yes'
-                self.peak_node = t
-                break
-            if self.m[t] < 1:
+                self.exist_multipeak = 'yes'  # 状态：找到
+                self.peak_node = t  # 记录该区间内的节点位置
+                break  # 不需要继续了，退出循环
+
+            if self.m[t] < 1:  # 若小于1，去除过去的历史节点，重新开始历史数据起点
                 p_start = t
                 continue
+
+        # （3）若没有新浪潮节点，或者新浪潮节点距离结束时间点过近（我这里设置为小于5天），则没必要再进行拟合了，直接拉到最后的点即可
         if self.exist_multipeak == 'no' or self.t_num - self.peak_node <= 5:
             self.peak_node = self.t_num - 1
-        # print(self.exist_multipeak)
-        #
-        # print('p:=',self.p)
-        # print('m:=',self.m)
 
-    def z_calculate(self):
+    def z_calculate(self):  # 用于计算z值
         for t in range(1,self.t_num):
             self.z[t] = math.fabs(self.i_hat[t] - self.i_act[t]) / math.sqrt(self.S[t] * self.I[t])
-        print('z:=',self.z)
+        # print('z:=',self.z)
+
+        # 另一种分子（自己想的），不用新增，直接用累积病例
         # for t in range(self.start+1,self.end+1):
         #     self.z[t] = math.fabs(self.I[t] - self.actual[t]) / math.sqrt(self.S[t] * self.I[t])
         # print('z:=', self.z)
 
-    def p_calculate(self,p_start,t):
-        larger_tem = 0
-        for u in range(p_start,t):
+    def p_calculate(self,p_start,t):  # 用于计算对应时间点t的p值
+        larger_tem = 0  # 初始化，t以前，不小于当前zt值的数量
+
+        for u in range(p_start,t):  # 搜索历史数据，对更大的进行计数
             if self.z[u] >= self.z[t]:
                 larger_tem += 1
+
         self.p[t] = larger_tem / (t - p_start)
 
-    def m_calculate(self,p_start,t):
-        if t == p_start + 1:
+    def m_calculate(self,p_start,t):  # 用于计算对应时间点t的m值
+        if t == p_start + 1:  # m_0初值赋值
             self.m[t] = self.m_0
         else:
             self.m[t] = self.m[t-1] * (self.m_s / (1 - math.exp(- self.m_s))) * math.exp(- self.m_s * self.p[t])
-            # print(self.p[t],math.exp(- self.m_s * self.p[t]))
 
 
 if __name__ == '__main__':
