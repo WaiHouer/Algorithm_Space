@@ -7,19 +7,28 @@ import math
 
 
 class Metropolis_Hastings:  # Metropolis_Hastings采样算法
-    def __init__(self,file_name):
+    def __init__(self,file_name,start,end,total_population,S_0,E_0,I_0,R_0):
         self.book = load_workbook(file_name)  # 读取数据
         self.sheet = self.book['湖北']
-        self.t_num = 60  # 时间长度
+
+        self.start = start  # 开始时间点
+        self.end = end  # 结束时间点
+        self.t_num = self.end - self.start + 1  # 时间长度
 
         self.actual = []  # 真实的感染人数，读取数据即可
-        for i in range(self.t_num):
+        for i in range(self.start,self.end+1):
             self.actual.append(self.sheet.cell(4+i,4).value)
 
         # 人群总数（武汉有5800w人口，全算上根本无法拟合，取10w看起来好很多）
-        self.total_population = 150000
+        self.total_population = total_population
+        self.S_0 = S_0
+        self.E_0 = E_0
+        self.I_0 = I_0
+        self.R_0 = R_0
 
-        self.iter = 200000  # 采样算法迭代次数
+        self.iter = 100000  # 采样算法迭代次数
+
+        self.para = []
 
         self.sampling()
 
@@ -33,15 +42,15 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         E = [0 for i in range(self.t_num)]
         I = [0 for i in range(self.t_num)]
         R = [0 for i in range(self.t_num)]
-        I[0] = 41  # 感染者
-        E[0] = 0  # 潜伏者
-        R[0] = 0  # 恢复者
-        S[0] = self.total_population - I[0] - E[0] - R[0]  # 易感者
+        S[0] = self.S_0
+        E[0] = self.E_0
+        I[0] = self.I_0
+        R[0] = self.R_0
 
         SSE = self.algorithm(S,E,I,R,beta_i,beta_e,alpha,gamma)
 
         for i in range(self.iter):
-            if i % 1000 == 0:
+            if i % 20000 == 0:
                 print(f'完成迭代{i}次')
             SSE_bef = SSE
 
@@ -67,6 +76,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
                 alpha = alpha_bef
                 gamma = gamma_bef
                 SSE = SSE_bef
+        self.para = [beta_i, beta_e, alpha, gamma]
         print(f'beta_i:{beta_i} ; beta_e:{beta_e} ; alpha:{alpha} ; gamma:{gamma}')
         print(SSE)
 
@@ -90,4 +100,4 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
 
 
 if __name__ == '__main__':
-    Metropolis_Hastings('疫情人数各省市数据统计列表.xlsx')
+    Metropolis_Hastings('疫情人数各省市数据统计列表.xlsx',0,59,150000,150000-41,0,41,0)

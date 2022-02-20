@@ -28,17 +28,17 @@ class SEAQURD:
         self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
         self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
 
-        self.region.append(Region('1-region',[3,7],8900,8800,100,0,0,0,0,0))
-        self.beta_e.append(0.23), self.beta_a.append(0.30), self.beta_u.append(0.32)
-        self.alpha.append(0.1)
-        self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
-        self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
-
-        self.region.append(Region('2-region',[11,30],9500,9400,100,0,0,0,0,0))
-        self.beta_e.append(0.24), self.beta_a.append(0.32), self.beta_u.append(0.35)
-        self.alpha.append(0.1)
-        self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
-        self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
+        # self.region.append(Region('1-region',[3,7],8900,8800,100,0,0,0,0,0))
+        # self.beta_e.append(0.23), self.beta_a.append(0.30), self.beta_u.append(0.32)
+        # self.alpha.append(0.1)
+        # self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
+        # self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
+        #
+        # self.region.append(Region('2-region',[11,30],9500,9400,100,0,0,0,0,0))
+        # self.beta_e.append(0.24), self.beta_a.append(0.32), self.beta_u.append(0.35)
+        # self.alpha.append(0.1)
+        # self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
+        # self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
 
         self.m = np.zeros((len(self.region),len(self.region)))
 

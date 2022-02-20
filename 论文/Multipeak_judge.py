@@ -6,68 +6,83 @@ import math
 
 
 class Multipeak_judge:
-    def __init__(self,file_name):
-        self.Model = SEIR(file_name)
+    def __init__(self,actual,fit_S,fit_I):
+        self.t_num = len(actual)
 
-        self.t_num = self.Model.t_num
-        self.actual = self.Model.actual
-        self.I = self.Model.I
-        self.S = self.Model.S
+        self.actual = actual
+        self.S = fit_S
+        self.I = fit_I
 
-        self.start_point = 1
+        self.exist_multipeak = 'no'
+        self.peak_node = 0
 
-        self.m_s = 2.5
-        self.m_0 = 500
-        self.m_threshold = 505
+        self.m_s = 1.3
+        self.m_0 = 200
+        self.m_threshold = 3000
 
-        # 由于要计算新增，是做差，所以此两个list第一个元素为None
-        self.i_hat = [None for t in range(self.t_num)]
-        self.i_act = [None for t in range(self.t_num)]
-        for t in range(self.start_point,self.t_num):
-            self.i_hat[t] = self.I[t] - self.I[t-1]
+        # 由于要计算新增，是做差，所以此两个list第一个元素为-1,代表无意义
+        self.i_hat = [-1 for t in range(self.t_num)]
+        self.i_act = [-1 for t in range(self.t_num)]
+        for t in range(1,self.t_num):
             self.i_act[t] = self.actual[t] - self.actual[t-1]
-        print(self.i_act)
-        print(self.i_hat)
+            self.i_hat[t] = self.I[t] - self.I[t - 1]
+        # print(self.i_act)
+        # print(self.i_hat)
 
-        self.z = [None for t in range(self.t_num)]
-        self.p = [None for t in range(self.t_num)]
-        self.m = [None for t in range(self.t_num)]
+        self.z = [-1 for t in range(self.t_num)]
+        self.p = [-1 for t in range(self.t_num)]
+        self.m = [-1 for t in range(self.t_num)]
 
+        self.algorithm()
+        print(self.peak_node)
+
+    def algorithm(self):
         self.z_calculate()
-        self.p_calculate()
-        self.m_calculate()
-        # 目前有点问题：
-        # （1）不应该一口气全算出来z，p，m，因为涉及到重置问题，不一样（改一下即可）
-        # （2）没加m的下限值（加上即可）
+        p_start = 1
+        for t in range(2,self.t_num):
+            self.p_calculate(p_start,t)
 
-        self.Model.picture()
+            self.m_calculate(p_start,t)
+            if self.m[t] > self.m_threshold:
+                print('找到',t, self.m)
+                self.exist_multipeak = 'yes'
+                self.peak_node = t
+                break
+            if self.m[t] < 1:
+                p_start = t
+                continue
+        if self.exist_multipeak == 'no' or self.t_num - self.peak_node <= 5:
+            self.peak_node = self.t_num - 1
+        # print(self.exist_multipeak)
+        #
+        # print('p:=',self.p)
+        # print('m:=',self.m)
 
     def z_calculate(self):
-        for t in range(self.start_point,self.t_num):
+        for t in range(1,self.t_num):
             self.z[t] = math.fabs(self.i_hat[t] - self.i_act[t]) / math.sqrt(self.S[t] * self.I[t])
-        print(self.z)
+        print('z:=',self.z)
+        # for t in range(self.start+1,self.end+1):
+        #     self.z[t] = math.fabs(self.I[t] - self.actual[t]) / math.sqrt(self.S[t] * self.I[t])
+        # print('z:=', self.z)
 
-    def p_calculate(self):
-        for t in range(self.start_point + 1,self.t_num):
-            larger_tem = 0
-            for u in range(self.start_point,t):
-                if self.z[u] >= self.z[t]:
-                    larger_tem += 1
-            self.p[t] = larger_tem / (t - self.start_point)
-        print(self.p)
+    def p_calculate(self,p_start,t):
+        larger_tem = 0
+        for u in range(p_start,t):
+            if self.z[u] >= self.z[t]:
+                larger_tem += 1
+        self.p[t] = larger_tem / (t - p_start)
 
-    def m_calculate(self):
-        for t in range(self.start_point,self.t_num):
-            if t == self.start_point:
-                self.m[t] = self.m_0
-            else:
-                self.m[t] = self.m[t-1] * (self.m_s / (1 - math.exp(- self.m_s))) * math.exp(- self.m_s * self.p[t])
-                print(self.p[t],math.exp(- self.m_s * self.p[t]))
-
-            if self.m[t] > self.m_threshold:
-                print(t,self.m)
-                break
+    def m_calculate(self,p_start,t):
+        if t == p_start + 1:
+            self.m[t] = self.m_0
+        else:
+            self.m[t] = self.m[t-1] * (self.m_s / (1 - math.exp(- self.m_s))) * math.exp(- self.m_s * self.p[t])
+            # print(self.p[t],math.exp(- self.m_s * self.p[t]))
 
 
 if __name__ == '__main__':
-    Multipeak_judge('疫情人数各省市数据统计列表.xlsx')
+    fit_s = [149959, 149931.27429739438, 149894.4719246345, 149844.95304990027, 149777.70207267022, 149685.80417590713, 149559.72727496285, 149386.3404232545, 149147.57854798014, 148818.63878554953, 148365.56845088402, 147742.08603888852, 146885.48050036537, 145711.49206453367, 144108.2488266082, 141929.71774056045, 138989.88134074307, 135060.1700892998, 129874.71500214012, 123150.56085468183, 114631.98712781006, 104166.56489028208, 91810.32756087116, 77935.64085179022, 63282.74944316734, 48881.3655236689, 35814.43554805836, 24907.195644311596, 16511.58489067011, 10504.94538200723, 6463.938843160991, 3875.0340558816197, 2277.2118141094975, 1318.21913716371, 754.4707477156669, 428.16262690544886, 241.47024041509553, 135.58220228536427, 75.90964079023796, 42.43546582911542, 23.71459015119421, 13.262388728297003, 7.4296568643189005, 4.172918503166732, 2.3517107899227945, 1.330814548373997, 0.7567068128061307, 0.4325865028219601, 0.24876299051583223, 0.14397046764535412, 0.08389186968595663, 0.04923650394403194, 0.029115015467973304, 0.017351294475896173, 0.010424053743181661, 0.006314221339064726, 0.0038570452514818535, 0.0023762979561841083, 0.0014767431230776418, 0.0009257674177803736]
+    fit_i = [41, 39.813413996685625, 39.87469009470584, 41.491874436404714, 45.10834556287634, 51.35279995389619, 61.10834238187439, 75.60774620628011, 96.56442824907906, 126.35190049132973, 168.2485092587682, 226.76911499355566, 308.1106504206453, 420.7431997032486, 576.1800298613492, 789.9541421541591, 1082.8066058679187, 1482.038274521672, 2022.86900482051, 2749.4598363123937, 3714.9661093521304, 4979.635519899528, 6605.704152244971, 8648.051437863991, 11140.810733928436, 14082.70662800341, 17426.91662189602, 21082.05447228591, 24926.74940243502, 28832.657684158607, 32685.895927774665, 36399.31266883013, 39914.63658752444, 43198.18864354975, 46234.40721840723, 49019.817204874475, 51558.41636631337, 53858.511156170876, 55930.690810357344, 57786.590653764644, 59438.16483610745, 60897.27322515981, 62175.45600592513, 63283.817798665244, 64232.974429788024, 65033.034881775464, 65693.60258459352, 66223.78703963854, 66632.22070887734, 66927.07834845703, 67116.09723406807, 67206.59743548921, 67205.5016929643, 67119.35466682138, 66954.34145218135, 66716.3053164789, 66410.76465320578, 66042.9291643055, 65617.71529348151, 65139.760937459374]
+    act = [41, 41, 41, 41, 41, 41, 45, 62, 121, 198, 270, 375, 444, 549, 729, 1052, 1423, 2714, 3554, 4586, 5806, 7153, 9074, 11177, 13522, 16678, 19665, 22112, 24953, 27100, 29631, 31728, 33366, 48206, 51986, 54406, 56249, 58182, 59989, 61682, 62457, 63088, 63454, 64084, 64287, 64786, 65187, 65596, 65914, 66337, 66907, 67103, 67217, 67332, 67466, 67592, 67666, 67707, 67743, 67760]
+    Multipeak_judge(act,fit_s,fit_i)
