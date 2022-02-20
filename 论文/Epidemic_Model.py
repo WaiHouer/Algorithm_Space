@@ -10,7 +10,7 @@ from SEIR import SEIR
 from Multipeak_judge import Multipeak_judge
 
 
-class Epidemic_Model:  # 完整传染病模型（试一下哈
+class Epidemic_Model:  # 完整传染病模型
     def __init__(self,file_name):
         self.file_name = file_name
         self.book = load_workbook(file_name)
@@ -105,7 +105,7 @@ class Epidemic_Model:  # 完整传染病模型（试一下哈
 
         plt.scatter(t_range, self.actual, color='lightblue', label='actual num')  # 画出真实感染数量
 
-        for t in self.new_flow_node:
+        for t in self.new_flow_node:  # 画出浪潮分割节点
             plt.plot([t, t], [0, 50000])
 
         plt.title('SEIR Model')
