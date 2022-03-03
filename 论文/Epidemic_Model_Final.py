@@ -78,7 +78,7 @@ class Epidemic_Model:  # 完整传染病模型
             print(sample.para)
 
             # （2）将拟合得到的参数，输入传染病模型，从而得到各群体的拟合数量
-            # 输入：文件名，起点，终点，总人数，各群体初值，拟合好的参数
+            # 输入：地区数量，文件名，起点，终点，总人数，各群体初值，拟合好的参数
             # 模型运算后得到：各群体拟合数量
             # 注：拟合数量的list长度，随着起点的向后推移而逐渐变短
             fitting = SEAQURD(self.region_num,self.file_name,start,end,self.total_population
