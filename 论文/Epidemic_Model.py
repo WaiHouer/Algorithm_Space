@@ -4,7 +4,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
-import math
 from Metropolis_Hastings import Metropolis_Hastings
 from SEIR import SEIR
 from Multipeak_judge import Multipeak_judge

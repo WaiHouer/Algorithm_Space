@@ -5,6 +5,6 @@ from openpyxl import load_workbook
 from scipy.optimize import leastsq
 
 
-para = [1,2,3,4]
+s = np.zeros(6)
 
-print(para[0:3])
+print(s,s[2])
