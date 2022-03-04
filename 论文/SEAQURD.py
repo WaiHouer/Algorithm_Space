@@ -98,7 +98,7 @@ class SEAQURD:
 
         self.algorithm()
 
-        self.picture()
+        # self.picture()
 
     def algorithm(self):
         self.m_calculate()

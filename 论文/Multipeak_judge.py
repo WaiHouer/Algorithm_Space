@@ -19,7 +19,7 @@ class Multipeak_judge:  # 多峰判断
         # 参数设置（论文并未涉及如何调参，以下是我自己编的）
         self.m_s = 1.3  # s：灵敏度系数
         self.m_0 = 200  # m_0：m的迭代初值
-        self.m_threshold = 3000  # m的新浪潮判断阈值
+        self.m_threshold = 500  # m的新浪潮判断阈值
 
         # 由于要计算新增，是做差，所以此两个list第一个元素为-1,代表无意义，即：[-1,xx,xx,xx...]
         self.i_hat = [-1 for t in range(self.t_num)]
@@ -35,6 +35,7 @@ class Multipeak_judge:  # 多峰判断
         self.p = [-1 for t in range(self.t_num)]  # p的计算需要z，且分母需要做差，则前两个元素无意义，[-1,-1,xx,xx,xx...]
         self.m = [-1 for t in range(self.t_num)]  # m的计算需要p，且有初值m_0，则第一个元素无意义，第二元素为m_0，[-1,m_0,xx,xx...]
 
+        print('多峰算法开始')
         self.algorithm()  # 算法主体
 
     def algorithm(self):  # 一口气算出z => 进入循环：算出p，算出m，m超过阈值则发现新浪潮，m低于1则舍弃前部分数据重新计算
@@ -52,10 +53,11 @@ class Multipeak_judge:  # 多峰判断
 
             # （2-2）计算m值，传入：历史数据起点，本次计算的时间点
             self.m_calculate(p_start,t)
+            # print('m：',self.m)
 
             # （2-3）判断改时间节点t的m值
             if self.m[t] > self.m_threshold:  # 若大于阈值，则代表找到了新浪潮节点
-                print('找到',t, self.m)
+                # print('找到',t, self.m)
                 self.exist_multipeak = 'yes'  # 状态：找到
                 self.peak_node = t  # 记录该区间内的节点位置
                 break  # 不需要继续了，退出循环
