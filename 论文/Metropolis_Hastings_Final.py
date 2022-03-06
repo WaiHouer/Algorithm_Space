@@ -97,7 +97,8 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         sample_start_t = time.time()
         for i in range(self.iter):
             if i % 2000 == 0:
-                print(f'完成迭代{i}次')
+                time_tem = time.time()
+                print(f'完成迭代{i}次，当前用时{time_tem - sample_start_t}s')
 
             # （2-1）记录上一次状态
             SSE_bef = SSE  # 记录上一次SSE结果
