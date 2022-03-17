@@ -19,7 +19,7 @@ class Multipeak_judge:  # 多峰判断
         # 参数设置（论文并未涉及如何调参，以下是我自己编的）
         self.m_s = 1.3  # s：灵敏度系数
         self.m_0 = 200  # m_0：m的迭代初值
-        self.m_threshold = 500  # m的新浪潮判断阈值
+        self.m_threshold = 300  # m的新浪潮判断阈值
 
         # 由于要计算新增，是做差，所以此两个list第一个元素为-1,代表无意义，即：[-1,xx,xx,xx...]
         self.i_hat = [-1 for t in range(self.t_num)]

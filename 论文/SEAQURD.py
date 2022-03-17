@@ -31,45 +31,18 @@ class SEAQURD:
         for i in range(self.region_num):
             for j in range(self.T):
                 self.actual[i].append(self.sheet[i].cell(1,self.start+j+89).value)
-        print(self.actual)
+        # print(self.actual)
         print('读取数据完毕')
 
-        # # 用于存放参数
-        # self.beta_e, self.beta_a, self.beta_u = [], [], []
-        # self.alpha = []
-        # self.delta_a, self.delta_q, self.delta_u = [], [], []
-        # self.gamma_a, self.gamma_q, self.gamma_u = [], [], []
-
+        # 用于接住、存放参数
         self.beta_e, self.beta_a, self.beta_u, self.alpha, self.delta_a, self.delta_q, self.delta_u, \
         self.gamma_a, self.gamma_q, self.gamma_u, self.p, self.q, self.c_0 = self.para
-
-        # self.p = 0.3  # 群体I中转化为A的占比
-        # self.q = 0.75  # 群体Y中转化为Q的占比
-        # self.c_0 = 0.8  # 本地的地理相关接触率系数
 
         for i in range(self.region_num):
             self.region.append(Region(f'{self.sheet[i].cell(1,1).value}',
                                       [self.sheet[i].cell(1,4).value,self.sheet[i].cell(1,5).value],
                                       self.total_population[i],
                                       S[i],E[i],A[i],Q[i],U[i],R[i],D[i]))
-
-        # self.region.append(Region('0-region',[1,45],10000,9900,100,0,0,0,0,0))
-        # self.beta_e.append(0.21), self.beta_a.append(0.35), self.beta_u.append(0.4)
-        # self.alpha.append(0.1)
-        # self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
-        # self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
-
-        # self.region.append(Region('1-region',[3,7],8900,8800,100,0,0,0,0,0))
-        # self.beta_e.append(0.23), self.beta_a.append(0.30), self.beta_u.append(0.32)
-        # self.alpha.append(0.1)
-        # self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
-        # self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
-        #
-        # self.region.append(Region('2-region',[11,30],9500,9400,100,0,0,0,0,0))
-        # self.beta_e.append(0.24), self.beta_a.append(0.32), self.beta_u.append(0.35)
-        # self.alpha.append(0.1)
-        # self.delta_a.append(0.0001), self.delta_q.append(0.0001), self.delta_u.append(0.0002)
-        # self.gamma_a.append(0.013), self.gamma_q.append(0.015), self.gamma_u.append(0.01)
 
         self.m = np.zeros((len(self.region),len(self.region)))  # 初始化距离矩阵
 
@@ -184,7 +157,7 @@ class SEAQURD:
             plt.ylabel('Number')
         plt.show()
 
-        total_I = []
+        total_I = []  # 计算出各区域加总在一起的总感染人数、真实人数，并画出图像
         total_actual = []
         for i in range(self.T):
             ii = 0
@@ -201,16 +174,16 @@ class SEAQURD:
 
 
 if __name__ == '__main__':
-    SEAQURD(6,'American_data.xlsx',0,0+60-1,
-            [4908621,734002,7378494,3038999,39937489,5845526],
-            [4908621-3870,734002-281,7378494-3705,3038999-1374,39937489-23403,5845526-7551],
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0],
-            [3870,281,3705,1374,23403,7551],
-            [0,0,0,0,0,0],
-            [0,0,0,0,0,0],
-            [[0.05,0.06,0.065,0.07,0.06,0.055],[0.055,0.06,0.05,0.075,0.065,0.06],[0.06,0.065,0.06,0.075,0.065,0.065],
-             [0.1,0.1,0.1,0.1,0.1,0.1],[0.0001,0.0001,0.0001,0.0001,0.0001,0.0001],[0.0001,0.0001,0.0001,0.0001,0.0001,0.0001],
-             [0.0002,0.0002,0.0002,0.0002,0.0002,0.0002],[0.013,0.013,0.013,0.013,0.013,0.013],[0.015,0.015,0.015,0.015,0.015,0.015],
-             [0.010,0.010,0.010,0.010,0.010,0.010],0.3,0.8,0.9])
+    SEAQURD(1,'American_data.xlsx',0,0+210-1,
+            [39937489],
+            [39937489-23403],
+            [0],
+            [0],
+            [0],
+            [23403],
+            [0],
+            [0],
+            [[0.06],[0.065],[0.065],
+             [0.1],[0.0001],[0.0001],
+             [0.0002],[0.013],[0.015],
+             [0.010],0.3,0.8,0.98])

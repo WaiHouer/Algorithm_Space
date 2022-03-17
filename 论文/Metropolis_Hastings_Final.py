@@ -45,29 +45,42 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         self.dist = self.dist_type_1()
         # self.dist = self.dist_type_2()
 
-        self.iter = 10000  # 采样算法迭代次数（次数——收敛？？？？）
+        self.iter = 40000  # 采样算法迭代次数（次数——收敛？？？？）
 
         self.para = []  # 用于存放最终拟合好的参数集合
 
         print('采样算法：读取数据完毕')
 
+        self.observe_para = [[[]for p in range(10)] for i in range(self.region_num)]  # 查看参数的收敛情况
+
         self.sampling()
 
     def sampling(self):
         # 参数赋初值
-        beta_e = [0.05, 0.06, 0.065, 0.07, 0.06, 0.055]
-        beta_a = [0.055, 0.06, 0.05, 0.075, 0.065, 0.06]
-        beta_u = [0.06, 0.065, 0.06, 0.075, 0.065, 0.065]
-        alpha = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
-        delta_a = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
-        delta_q = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
-        delta_u = [0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002]
-        gamma_a = [0.013, 0.013, 0.013, 0.013, 0.013, 0.013]
-        gamma_q = [0.015, 0.015, 0.015, 0.015, 0.015, 0.015]
-        gamma_u = [0.010, 0.010, 0.010, 0.010, 0.010, 0.010]
+        beta_e = [0.07 for i in range(self.region_num)]
+        beta_a = [0.07 for i in range(self.region_num)]
+        beta_u = [0.07 for i in range(self.region_num)]
+        alpha = [0.1 for i in range(self.region_num)]
+        delta_a = [0.00015 for i in range(self.region_num)]
+        delta_q = [0.00015 for i in range(self.region_num)]
+        delta_u = [0.00015 for i in range(self.region_num)]
+        gamma_a = [0.013 for i in range(self.region_num)]
+        gamma_q = [0.013 for i in range(self.region_num)]
+        gamma_u = [0.013 for i in range(self.region_num)]
+
+        # beta_e = [random.uniform(0, 0.15) for i in range(self.region_num)]
+        # beta_a = [random.uniform(0, 0.15) for i in range(self.region_num)]
+        # beta_u = [random.uniform(0, 0.15) for i in range(self.region_num)]
+        # alpha = [random.uniform(0, 0.2) for i in range(self.region_num)]
+        # delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+        # delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+        # delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+        # gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
+        # gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
+        # gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
         p = 0.3
-        q = 0.8
-        c_0 = 0.98
+        q = 0.6
+        c_0 = 0.99
 
         # 初始化个群体list
         # 每行对应一个地区，列为时间间隔
@@ -100,6 +113,19 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
                 time_tem = time.time()
                 print(f'完成迭代{i}次，当前用时{time_tem - sample_start_t}s')
 
+            # 查看参数的收敛情况（每迭代50次记录一次）
+            for r in range(self.region_num):
+                self.observe_para[r][0].append(beta_e[r])
+                self.observe_para[r][1].append(beta_a[r])
+                self.observe_para[r][2].append(beta_u[r])
+                self.observe_para[r][3].append(alpha[r])
+                self.observe_para[r][4].append(delta_a[r])
+                self.observe_para[r][5].append(delta_q[r])
+                self.observe_para[r][6].append(delta_u[r])
+                self.observe_para[r][7].append(gamma_a[r])
+                self.observe_para[r][8].append(gamma_q[r])
+                self.observe_para[r][9].append(gamma_u[r])
+
             # （2-1）记录上一次状态
             SSE_bef = SSE  # 记录上一次SSE结果
 
@@ -118,18 +144,18 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             # c_0_bef = c_0
 
             # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE
-            beta_e = [random.uniform(0,0.1) for i in range(self.region_num)]
-            beta_a = [random.uniform(0,0.1) for i in range(self.region_num)]
-            beta_u = [random.uniform(0,0.1) for i in range(self.region_num)]
-            alpha = [random.uniform(0,0.2) for i in range(self.region_num)]
-            delta_a = [random.uniform(0,0.0005) for i in range(self.region_num)]
-            delta_q = [random.uniform(0,0.0005) for i in range(self.region_num)]
-            delta_u = [random.uniform(0,0.0005) for i in range(self.region_num)]
-            gamma_a = [random.uniform(0,0.03) for i in range(self.region_num)]
-            gamma_q = [random.uniform(0,0.03) for i in range(self.region_num)]
-            gamma_u = [random.uniform(0,0.03) for i in range(self.region_num)]
+            beta_e = [random.uniform(0, 0.15) for i in range(self.region_num)]
+            beta_a = [random.uniform(0, 0.15) for i in range(self.region_num)]
+            beta_u = [random.uniform(0, 0.15) for i in range(self.region_num)]
+            alpha = [random.uniform(0, 0.2) for i in range(self.region_num)]
+            delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
+            gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
+            gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
             p = random.uniform(0,0.5)
-            q = random.uniform(0,0.5)
+            q = random.uniform(0.3,0.8)
             # c_0 = random.uniform(0.9,1)
 
             SSE = self.algorithm(S, E, A, Q, U, R, D, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u,
@@ -191,13 +217,18 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
                           + delta_u[i] * U[i][t - 1]
         I = A + Q + U
         SSE = 0
-        for i in range(self.T):
-            fit = 0
-            act = 0
+
+        # for i in range(self.T):  # SSE计算方法一：对各区域的总感染人数最小二乘
+        #     fit = 0
+        #     act = 0
+        #     for j in range(self.region_num):
+        #         fit += I[j][i]
+        #         act += self.actual[j][i]
+        #     SSE += (fit - act) ** 2
+
+        for i in range(self.T):  # SSE计算方法二：对各区域的各感染人数最小二乘
             for j in range(self.region_num):
-                fit += I[j][i]
-                act += self.actual[j][i]
-            SSE += (fit - act) ** 2
+                SSE += (I[j][i] - self.actual[j][i]) ** 2
 
         return SSE
 
