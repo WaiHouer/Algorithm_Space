@@ -45,7 +45,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         self.dist = self.dist_type_1()
         # self.dist = self.dist_type_2()
 
-        self.iter = 40000  # 采样算法迭代次数（次数——收敛？？？？）
+        self.iter = 50000  # 采样算法迭代次数（次数——收敛？？？？）
 
         self.para = []  # 用于存放最终拟合好的参数集合
 
@@ -156,7 +156,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
             p = random.uniform(0,0.5)
             q = random.uniform(0.3,0.8)
-            # c_0 = random.uniform(0.9,1)
+            # c_0 = random.uniform(0.95,1)
 
             SSE = self.algorithm(S, E, A, Q, U, R, D, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u,
                                  gamma_a, gamma_q, gamma_u, p, q, c_0)
