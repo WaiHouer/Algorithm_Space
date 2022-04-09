@@ -25,6 +25,8 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
 
         self.region = []  # 用于存放地区
 
+        self.actual_ratio_list = np.zeros((self.region_num, self.T))  # 感染者比例系数（用于平衡人口对各区域拟合误差的影响）
+
         self.actual = [[] for i in range(self.region_num)]
         for i in range(self.region_num):
             for j in range(self.T):
@@ -56,11 +58,14 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         self.sampling()
 
     def sampling(self):
+        # 计算各区域感染者比例系数
+        self.actual_ratio()
+
         # 参数赋初值
-        beta_e = [0.07 for i in range(self.region_num)]
-        beta_a = [0.07 for i in range(self.region_num)]
-        beta_u = [0.07 for i in range(self.region_num)]
-        alpha = [0.1 for i in range(self.region_num)]
+        beta_e = [0.04 for i in range(self.region_num)]
+        beta_a = [0.04 for i in range(self.region_num)]
+        beta_u = [0.04 for i in range(self.region_num)]
+        alpha = [0.2 for i in range(self.region_num)]
         delta_a = [0.00015 for i in range(self.region_num)]
         delta_q = [0.00015 for i in range(self.region_num)]
         delta_u = [0.00015 for i in range(self.region_num)]
@@ -68,16 +73,6 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         gamma_q = [0.013 for i in range(self.region_num)]
         gamma_u = [0.013 for i in range(self.region_num)]
 
-        # beta_e = [random.uniform(0, 0.15) for i in range(self.region_num)]
-        # beta_a = [random.uniform(0, 0.15) for i in range(self.region_num)]
-        # beta_u = [random.uniform(0, 0.15) for i in range(self.region_num)]
-        # alpha = [random.uniform(0, 0.2) for i in range(self.region_num)]
-        # delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-        # delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-        # delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-        # gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
-        # gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
-        # gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
         p = 0.3
         q = 0.6
         c_0 = 0.99
@@ -101,15 +96,14 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             D[i][0] = self.region[i].D
 
         # （1）计算初始的SSE值
-        self.m_calculate(c_0)  # 放在这里，代表c_0固定不变，放在algorithm函数开头，代表也需要拟合
+        # self.m_calculate(c_0)  # 放在这里，代表c_0固定不变，放在algorithm函数开头，代表也需要拟合
         SSE = self.algorithm(S,E,A,Q,U,R,D,beta_e,beta_a,beta_u,alpha,delta_a,delta_q,delta_u,
                              gamma_a,gamma_q,gamma_u,p,q,c_0)
-        print(SSE)
 
         # （2）迭代采样
         sample_start_t = time.time()
         for i in range(self.iter):
-            if i % 2000 == 0:
+            if i % 5000 == 0:
                 time_tem = time.time()
                 print(f'完成迭代{i}次，当前用时{time_tem - sample_start_t}s')
 
@@ -141,22 +135,22 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             gamma_u_bef = gamma_u
             p_bef = p
             q_bef = q
-            # c_0_bef = c_0
+            c_0_bef = c_0
 
             # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE
-            beta_e = [random.uniform(0, 0.15) for i in range(self.region_num)]
-            beta_a = [random.uniform(0, 0.15) for i in range(self.region_num)]
-            beta_u = [random.uniform(0, 0.15) for i in range(self.region_num)]
-            alpha = [random.uniform(0, 0.2) for i in range(self.region_num)]
+            beta_e = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
+            beta_a = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
+            beta_u = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
+            alpha = [random.uniform(0.15, 0.25) for i in range(self.region_num)]
             delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
             gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
             gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            p = random.uniform(0,0.5)
-            q = random.uniform(0.3,0.8)
-            # c_0 = random.uniform(0.95,1)
+            p = random.uniform(0.1,0.5)
+            q = random.uniform(0.5,0.8)
+            c_0 = random.uniform(0.96,1)
 
             SSE = self.algorithm(S, E, A, Q, U, R, D, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u,
                                  gamma_a, gamma_q, gamma_u, p, q, c_0)
@@ -179,7 +173,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
                 gamma_u = gamma_u_bef
                 p = p_bef
                 q = q_bef
-                # c_0 = c_0_bef
+                c_0 = c_0_bef
 
                 SSE = SSE_bef
         sample_end_t = time.time()
@@ -189,7 +183,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         print('SSE:',SSE)
 
     def algorithm(self,S,E,A,Q,U,R,D,beta_e,beta_a,beta_u,alpha,delta_a,delta_q,delta_u,gamma_a,gamma_q,gamma_u,p,q,c_0):
-
+        self.m_calculate(c_0)  # 放在algorithm函数开头，代表也需要拟合
         for i in range(len(self.region)):
 
             for t in range(1, self.T):
@@ -218,17 +212,9 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         I = A + Q + U
         SSE = 0
 
-        # for i in range(self.T):  # SSE计算方法一：对各区域的总感染人数最小二乘
-        #     fit = 0
-        #     act = 0
-        #     for j in range(self.region_num):
-        #         fit += I[j][i]
-        #         act += self.actual[j][i]
-        #     SSE += (fit - act) ** 2
-
-        for i in range(self.T):  # SSE计算方法二：对各区域的各感染人数最小二乘
+        for i in range(self.T):  # SSE计算方法：对各区域的各感染人数最小二乘（且乘以感染者比例系数去除人口影响）
             for j in range(self.region_num):
-                SSE += (I[j][i] - self.actual[j][i]) ** 2
+                SSE += ((I[j][i] - self.actual[j][i]) * self.actual_ratio_list[j][i]) ** 2
 
         return SSE
 
@@ -239,6 +225,18 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
                     self.m[i][j] = c_0
                 else:
                     self.m[i][j] = (1 - c_0) * self.dist[i][j] / sum(self.dist[:, j])
+
+    def actual_ratio(self):
+        total_actual = []
+        for i in range(self.T):
+            act = 0
+            for j in range(self.region_num):
+                act += self.actual[j][i]
+            total_actual.append(act)
+
+        for i in range(self.T):
+            for j in range(self.region_num):
+                self.actual_ratio_list[j][i] = total_actual[i] / self.actual[j][i] / self.region_num
 
     def dist_type_1(self):
         dist = np.zeros((len(self.region), len(self.region)))

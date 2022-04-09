@@ -1,7 +1,6 @@
 '''
 用于判断多峰起始点
 '''
-from SEIR import SEIR
 import math
 
 
@@ -66,7 +65,7 @@ class Multipeak_judge:  # 多峰判断
                 continue
 
         # （3）若没有新浪潮节点，或者新浪潮节点距离结束时间点过近（我这里设置为小于5天），则没必要再进行拟合了，直接拉到最后的点即可
-        if self.exist_multipeak == 'no' or self.t_num - self.peak_node <= 5:
+        if self.exist_multipeak == 'no' or self.t_num - self.peak_node <= 3:
             self.peak_node = self.t_num - 1
 
     def z_calculate(self):  # 用于计算z值

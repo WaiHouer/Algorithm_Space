@@ -17,7 +17,7 @@ class Epidemic_Model:  # 完整传染病模型
         self.file_name = file_name  # 文件名
         self.book = load_workbook(file_name)  # 加载文件
 
-        self.region_num = 2  # 地区数量
+        self.region_num = 3  # 地区数量
 
         self.sheet = []  # 加载每个地区（按顺序：0，1，2......）
         self.region_num = self.region_num
@@ -30,12 +30,12 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 275  # 结束时间点（20.4.13-21.1.13，此处为275）
+        self.end = 244  # 结束时间点（20.4.13-21.1.13，此处为275）
         self.t_num = self.end - self.start + 1  # 时间长度
 
-        self.fitting_num = 15  # 拟合小周期
+        self.fitting_num = 30  # 拟合小周期
 
-        self.predict_num = 30  # 预测未来天数
+        self.predict_num = 60  # 预测未来天数
 
         self.actual = [[] for i in range(self.region_num)]  # 真实感染人数（从4月13号开始）
         for i in range(self.region_num):
@@ -110,7 +110,7 @@ class Epidemic_Model:  # 完整传染病模型
 
         self.pre_time_start = time.time()  # 对滚动预测时间计时
         self.final_para_fixed = self.final_para  # 固定最终参数（方便针对不同滚动情况，进行初始化）
-        for i in range(7):
+        for i in [0, 2, 6]:  # 对滚动天数为1，3，7各尝试一下
             print(f'滚动预测算法开始-滚动{i+1}天')
             self.rolling_num = i + 1
             self.rolling_predict()  # 滚动预测算法
@@ -149,17 +149,18 @@ class Epidemic_Model:  # 完整传染病模型
         e = self.end  # 初始化拟合终点（始终不变）
         start_list = []
         end_list = []
-        while e - s + 1 >= 2 * self.fitting_num:  # 每30天为一个拟合周期，这样拟合更精准且迭代次数更少（不足2倍周期的看做一个周期）
+        while e - s + 1 >= self.fitting_num:  # 每30天为一个拟合周期，这样拟合更精准且迭代次数更少（不足2倍周期的看做一个周期）
             start_list.append(s)
             end_list.append(s + self.fitting_num - 1)
             s += self.fitting_num - 1
-        if s != e:  # 若有剩余，代表最后不足2倍周期，则看做最后一个周期
+        if s != e:  # 若有剩余，代表最后不足周期，则看做最后一个周期
             start_list.append(s)
             end_list.append(e)
 
         for st in range(len(start_list)):  # 对每个周期进行拟合
             start = start_list[st]
             end = end_list[st]
+            print(f'开始拟合，时间段：第{start + 1} - {end + 1}天')
 
             self.observe[0] += 1  # 观察拟合参数的周期计数+1
 
@@ -252,6 +253,7 @@ class Epidemic_Model:  # 完整传染病模型
                 U_0[i] = self.U[i][end]
                 R_0[i] = self.R[i][end]
                 D_0[i] = self.D[i][end]
+            print(self.final_para)
 
         self.I = self.A + self.Q + self.U
 
@@ -303,7 +305,7 @@ class Epidemic_Model:  # 完整传染病模型
                 plt.plot(t_actual_range, self.actual[i], label=f'{self.region_name[i]}_Actual', marker='.')
                 # 预测部分
                 for j in range(7):  # 7种滚动天数情况
-                    plt.plot(t_pre_range, self.I_pre[j][i], label=f'Region:{i},Rolling:{j + 1}days')  # 画出滚动预测结果
+                    plt.plot(t_pre_range, self.I_pre[j][i])  # 画出滚动预测结果
 
                 plt.plot(t_pre_range, self.I_pre_direct[i], color='salmon')  # 画出直接预测结果
 
@@ -326,7 +328,7 @@ class Epidemic_Model:  # 完整传染病模型
                 total_I_pre[k].append(ii)
 
         for k in range(7):
-            plt.plot(t_pre_range, total_I_pre[k], label=f'Total_predict,Rolling:{k + 1}days')  # 画出滚动预测结果
+            plt.plot(t_pre_range, total_I_pre[k])  # 画出滚动预测结果
 
         plt.plot(t_pre_range, total_I_pre_direct, color='salmon')  # 画出直接预测结果
 
