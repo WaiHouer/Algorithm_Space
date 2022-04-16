@@ -1,8 +1,5 @@
 
 
-
-b = {}
-for i in range(10):
-    b[f'{i}'] = i**2
-print(b)
+a = [2,3,4,5,6,7]
+print(sum(a))
 
