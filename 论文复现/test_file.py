@@ -1,4 +1,3 @@
-
 for b in self.b:
     print(f'b（每周新增病床数）：{b}')
     S_0_pre = [0 for i in range(self.region_num)]  # 滚动预测起点（为拟合的最后一天）
@@ -24,7 +23,7 @@ for b in self.b:
 
     for t in range(self.predict_num):  # （2）对各仿真节点进行迭代规划
         if t % 7 == 0:
-            b_t = b  # 每周进行一次病床增加
+            b_t = b
         else:
             b_t = 0
         print(f'迭代仿真第 {t + 1} / {self.predict_num} 天')
@@ -59,8 +58,6 @@ for b in self.b:
         a_before = model.a
 
     for t in range(1, self.predict_num):
-        for i in range(self.region_num):
+        for i in range(self.region_num):  # 对净增长人数进行逆运算
             self.a_addition[f'b={b}'] += self.simulate_a_result[i][t] - self.simulate_a_result[i][t - 1] \
                                          + self.simulate_para_list[t][3][i] * self.simulate_a_result[i][t - 1]
-
-

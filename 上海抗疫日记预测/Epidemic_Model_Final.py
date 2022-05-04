@@ -30,7 +30,7 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 45  # 结束时间点（20.4.13-21.1.13，此处为275）
+        self.end = 49  # 结束时间点（20.4.13-21.1.13，此处为275）
         self.t_num = self.end - self.start + 1  # 时间长度
 
         self.fitting_num = 15  # 拟合小周期

@@ -42,7 +42,7 @@ class Spatial_Resource_Allocation:
         self.r = 0.1  # 最大部署率
 
         self.simulate_para_list = [[] for i in range(self.predict_num)]  # 存放预测仿真期每一天的参数值
-        self.simulate_result = np.zeros((self.region_num, self.predict_num))  # 存放预测仿真结果
+        self.simulate_result = np.zeros((self.region_num, self.predict_num))  # 存放自然状态仿真结果（对照组）
         self.simulate_a_result = np.zeros((self.region_num, self.predict_num))  # 存放Myopic_LP的仿真结果
         self.simulate_b_result = np.zeros((self.region_num, self.predict_num))  # 存放Benchmark的仿真结果
 
@@ -60,12 +60,53 @@ class Spatial_Resource_Allocation:
         # （1）用原始传染病模型确定各仿真节点对应参数 + 仿真结果
         simulation = Epidemic_Model(self.file_name)
         self.simulate_para_list = simulation.simulate_para_list
-        # self.simulate_result = simulation.I_pre[2] - simulation.Q_pre[2]  # 下标对应滚动天数的情况，视情况记得更改！！
-        self.simulate_result = simulation.E_pre[2]  # 下标对应滚动天数的情况，视情况记得更改！！
 
         # 记录拟合，用于取出最后一个点当做起点
         S_fit, E_fit, A_fit, Q_fit = simulation.S, simulation.E, simulation.A, simulation.Q
         U_fit, R_fit, D_fit = simulation.U, simulation.R, simulation.D
+
+        # 无病床安排（自然状态-对照组）：
+        print('开始执行自然状态（对照组）')
+        for b in self.b:
+            print(f'b（每周新增病床数）：{b}')
+            S_0_pre = [0 for i in range(self.region_num)]  # 滚动预测起点（为拟合的最后一天）
+            E_0_pre = [0 for i in range(self.region_num)]
+            A_0_pre = [0 for i in range(self.region_num)]
+            Q_0_pre = [0 for i in range(self.region_num)]
+            U_0_pre = [0 for i in range(self.region_num)]
+            R_0_pre = [0 for i in range(self.region_num)]
+            D_0_pre = [0 for i in range(self.region_num)]
+            for i in range(self.region_num):
+                S_0_pre[i] = S_fit[i][-1]
+                E_0_pre[i] = E_fit[i][-1]
+                A_0_pre[i] = A_fit[i][-1]
+                Q_0_pre[i] = Q_fit[i][-1]
+                U_0_pre[i] = U_fit[i][-1]
+                R_0_pre[i] = R_fit[i][-1]
+                D_0_pre[i] = D_fit[i][-1]
+
+            start = self.end
+
+            a_0 = [0 for i in range(self.region_num)]
+
+            for t in range(self.predict_num):
+
+                simulation_nature = SEAQURD(self.region_num, self.file_name, start, start + 1, self.total_population,
+                                            S_0_pre, E_0_pre, A_0_pre, Q_0_pre, U_0_pre, R_0_pre, D_0_pre,
+                                            self.simulate_para_list[t], self.ksi, a_0)
+                for i in range(self.region_num):
+                    self.simulate_result[i][t] = simulation_nature.E[i][-1]
+
+                # 更新起点（即向前推一天）
+                start += 1
+                for i in range(self.region_num):
+                    S_0_pre[i] = simulation_nature.S[i][-1]
+                    E_0_pre[i] = simulation_nature.E[i][-1]
+                    A_0_pre[i] = simulation_nature.A[i][-1]
+                    Q_0_pre[i] = simulation_nature.Q[i][-1]
+                    U_0_pre[i] = simulation_nature.U[i][-1]
+                    R_0_pre[i] = simulation_nature.R[i][-1]
+                    D_0_pre[i] = simulation_nature.D[i][-1]
 
         # Myopic_LP算法策略：
         print('开始执行Myopic_LP算法策略')
@@ -192,11 +233,13 @@ class Spatial_Resource_Allocation:
 
         # （3）最后，对比新增
         for t in range(1, self.predict_num):
-            for i in range(self.region_num):
+            for i in range(self.region_num):  # 对净增长人数进行逆运算（自然状态）
                 self.pure_addition += self.simulate_result[i][t] - self.simulate_result[i][t - 1] \
                                       + self.simulate_para_list[t][3][i] * self.simulate_result[i][t - 1]
+
         print(f'训练集：{(self.end - self.start + 1) / 7}周')
-        print(f'未来四周潜伏者净增长数量：{self.pure_addition}')
+        print(f'自然状态下，未来四周潜伏者净增长数量：')
+        print(self.pure_addition)
 
         print(f'Myopic_LP策略下，未来四周潜伏者净增长数量：')
         print(self.a_addition)
