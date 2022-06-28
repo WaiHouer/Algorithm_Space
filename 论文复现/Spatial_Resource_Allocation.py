@@ -1,9 +1,9 @@
 """
 论文复现：Spatial Resource Allocation for Emerging Epidemics: A Comparison of Greedy , Myopic, and Dynamic Policies
 
-开始日期：2022-4-14
+开始日期：2022-4-14 / 完成日期：2022-5-1
 
-author：@歪猴
+author：@陈典
 """
 from openpyxl import load_workbook
 from SEAQURD_NEW import SEAQURD
@@ -30,7 +30,7 @@ class Spatial_Resource_Allocation:
         self.dist = self.dist_type_1()  # 距离倒数矩阵
 
         self.start = 0  # 开始时间点
-        self.end = 27  # 结束时间点（20.4.13-21.1.13，此处为275）
+        self.end = 27  # 结束时间点（20.4.1-21.1.1，此处为275）
         self.t_num = self.end - self.start + 1  # 时间长度
 
         self.predict_num = 28  # 预测未来天数
@@ -38,7 +38,7 @@ class Spatial_Resource_Allocation:
         self.ksi = 0.5  # 论文给定的柯西值
         self.a = np.zeros((self.predict_num, self.region_num))  # 决策病床数（Myopic_LP）
         self.a_2 = np.zeros((self.predict_num, self.region_num))  # 决策病床数（Benchmark）
-        self.b = [200, 400, 600, 800, 1000]  # 每周增加的病床数（多种情况，用于对比）
+        self.b = [200 * (i + 1) for i in range(20)]  # 每周增加的病床数（多种情况，用于对比）
         self.r = 0.1  # 最大部署率
 
         self.simulate_para_list = [[] for i in range(self.predict_num)]  # 存放预测仿真期每一天的参数值
@@ -67,46 +67,44 @@ class Spatial_Resource_Allocation:
 
         # 无病床安排（自然状态-对照组）：
         print('开始执行自然状态（对照组）')
-        for b in self.b:
-            print(f'b（每周新增病床数）：{b}')
-            S_0_pre = [0 for i in range(self.region_num)]  # 滚动预测起点（为拟合的最后一天）
-            E_0_pre = [0 for i in range(self.region_num)]
-            A_0_pre = [0 for i in range(self.region_num)]
-            Q_0_pre = [0 for i in range(self.region_num)]
-            U_0_pre = [0 for i in range(self.region_num)]
-            R_0_pre = [0 for i in range(self.region_num)]
-            D_0_pre = [0 for i in range(self.region_num)]
+        S_0_pre = [0 for i in range(self.region_num)]  # 滚动预测起点（为拟合的最后一天）
+        E_0_pre = [0 for i in range(self.region_num)]
+        A_0_pre = [0 for i in range(self.region_num)]
+        Q_0_pre = [0 for i in range(self.region_num)]
+        U_0_pre = [0 for i in range(self.region_num)]
+        R_0_pre = [0 for i in range(self.region_num)]
+        D_0_pre = [0 for i in range(self.region_num)]
+        for i in range(self.region_num):
+            S_0_pre[i] = S_fit[i][-1]
+            E_0_pre[i] = E_fit[i][-1]
+            A_0_pre[i] = A_fit[i][-1]
+            Q_0_pre[i] = Q_fit[i][-1]
+            U_0_pre[i] = U_fit[i][-1]
+            R_0_pre[i] = R_fit[i][-1]
+            D_0_pre[i] = D_fit[i][-1]
+
+        start = self.end
+
+        a_0 = [0 for i in range(self.region_num)]
+
+        for t in range(self.predict_num):
+
+            simulation_nature = SEAQURD(self.region_num, self.file_name, start, start + 1, self.total_population,
+                                        S_0_pre, E_0_pre, A_0_pre, Q_0_pre, U_0_pre, R_0_pre, D_0_pre,
+                                        self.simulate_para_list[t], self.ksi, a_0)
             for i in range(self.region_num):
-                S_0_pre[i] = S_fit[i][-1]
-                E_0_pre[i] = E_fit[i][-1]
-                A_0_pre[i] = A_fit[i][-1]
-                Q_0_pre[i] = Q_fit[i][-1]
-                U_0_pre[i] = U_fit[i][-1]
-                R_0_pre[i] = R_fit[i][-1]
-                D_0_pre[i] = D_fit[i][-1]
+                self.simulate_result[i][t] = simulation_nature.E[i][-1]
 
-            start = self.end
-
-            a_0 = [0 for i in range(self.region_num)]
-
-            for t in range(self.predict_num):
-
-                simulation_nature = SEAQURD(self.region_num, self.file_name, start, start + 1, self.total_population,
-                                            S_0_pre, E_0_pre, A_0_pre, Q_0_pre, U_0_pre, R_0_pre, D_0_pre,
-                                            self.simulate_para_list[t], self.ksi, a_0)
-                for i in range(self.region_num):
-                    self.simulate_result[i][t] = simulation_nature.E[i][-1]
-
-                # 更新起点（即向前推一天）
-                start += 1
-                for i in range(self.region_num):
-                    S_0_pre[i] = simulation_nature.S[i][-1]
-                    E_0_pre[i] = simulation_nature.E[i][-1]
-                    A_0_pre[i] = simulation_nature.A[i][-1]
-                    Q_0_pre[i] = simulation_nature.Q[i][-1]
-                    U_0_pre[i] = simulation_nature.U[i][-1]
-                    R_0_pre[i] = simulation_nature.R[i][-1]
-                    D_0_pre[i] = simulation_nature.D[i][-1]
+            # 更新起点（即向前推一天）
+            start += 1
+            for i in range(self.region_num):
+                S_0_pre[i] = simulation_nature.S[i][-1]
+                E_0_pre[i] = simulation_nature.E[i][-1]
+                A_0_pre[i] = simulation_nature.A[i][-1]
+                Q_0_pre[i] = simulation_nature.Q[i][-1]
+                U_0_pre[i] = simulation_nature.U[i][-1]
+                R_0_pre[i] = simulation_nature.R[i][-1]
+                D_0_pre[i] = simulation_nature.D[i][-1]
 
         # Myopic_LP算法策略：
         print('开始执行Myopic_LP算法策略')
@@ -240,11 +238,18 @@ class Spatial_Resource_Allocation:
         print(f'训练集：{(self.end - self.start + 1) / 7}周')
         print(f'自然状态下，未来四周潜伏者净增长数量：')
         print(self.pure_addition)
+        print('---------------------------------------')
 
         print(f'Myopic_LP策略下，未来四周潜伏者净增长数量：')
         print(self.a_addition)
+        print(f'病床分配结果：')
+        print(self.a)
+        print('---------------------------------------')
         print(f'Benchmark策略下，未来四周潜伏者净增长数量：')
         print(self.b_addition)
+        print(f'病床分配结果：')
+        print(self.a_2)
+        print('---------------------------------------')
 
     def dist_type_1(self):
         dist = np.zeros((self.region_num, self.region_num))

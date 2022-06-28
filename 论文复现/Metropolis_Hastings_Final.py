@@ -47,7 +47,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         self.dist = self.dist_type_1()
         # self.dist = self.dist_type_2()
 
-        self.iter = 5000  # 采样算法迭代次数（次数——收敛？？？？）
+        self.iter = 10000  # 采样算法迭代次数（次数——收敛？？？？）
 
         self.para = []  # 用于存放最终拟合好的参数集合
 

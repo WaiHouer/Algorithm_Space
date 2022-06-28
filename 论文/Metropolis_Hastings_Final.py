@@ -30,7 +30,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         self.actual = [[] for i in range(self.region_num)]
         for i in range(self.region_num):
             for j in range(self.T):
-                self.actual[i].append(self.sheet[i].cell(1, self.start+j+89).value)
+                self.actual[i].append(self.sheet[i].cell(1, self.start + j + 88).value)
         # print(self.actual)
 
         for i in range(self.region_num):
@@ -103,7 +103,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         # （2）迭代采样
         sample_start_t = time.time()
         for i in range(self.iter):
-            if i % 5000 == 0:
+            if i % 10000 == 0:
                 time_tem = time.time()
                 print(f'完成迭代{i}次，当前用时{time_tem - sample_start_t}s')
 

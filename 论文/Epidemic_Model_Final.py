@@ -17,7 +17,7 @@ class Epidemic_Model:  # 完整传染病模型
         self.file_name = file_name  # 文件名
         self.book = load_workbook(file_name)  # 加载文件
 
-        self.region_num = 3  # 地区数量
+        self.region_num = 1  # 地区数量
 
         self.sheet = []  # 加载每个地区（按顺序：0，1，2......）
         self.region_num = self.region_num
@@ -30,17 +30,18 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 244  # 结束时间点（20.4.13-21.1.13，此处为275）
+        self.end = 142  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
         self.t_num = self.end - self.start + 1  # 时间长度
 
         self.fitting_num = 30  # 拟合小周期
 
-        self.predict_num = 60  # 预测未来天数
+        self.predict_num = 30  # 预测未来天数
+
 
         self.actual = [[] for i in range(self.region_num)]  # 真实感染人数（从4月13号开始）
         for i in range(self.region_num):
             for j in range(self.t_num + self.predict_num):
-                self.actual[i].append(self.sheet[i].cell(1, self.start + j + 89).value)
+                self.actual[i].append(self.sheet[i].cell(1, self.start + j + 88).value)
         # print(self.actual)
 
         # 初始化群体，用于记录“最终”的拟合结果（即：整合了多峰后的最终结果）
@@ -110,7 +111,8 @@ class Epidemic_Model:  # 完整传染病模型
 
         self.pre_time_start = time.time()  # 对滚动预测时间计时
         self.final_para_fixed = self.final_para  # 固定最终参数（方便针对不同滚动情况，进行初始化）
-        for i in [0, 2, 6]:  # 对滚动天数为1，3，7各尝试一下
+        self.try_roll = [2, 6]  # 对滚动天数为3，7各尝试一下
+        for i in self.try_roll:
             print(f'滚动预测算法开始-滚动{i+1}天')
             self.rolling_num = i + 1
             self.rolling_predict()  # 滚动预测算法
@@ -149,7 +151,8 @@ class Epidemic_Model:  # 完整传染病模型
         e = self.end  # 初始化拟合终点（始终不变）
         start_list = []
         end_list = []
-        while e - s + 1 >= self.fitting_num:  # 每30天为一个拟合周期，这样拟合更精准且迭代次数更少（不足2倍周期的看做一个周期）
+        while e - s + 1 >= self.fitting_num * 2:  # 每30天为一个拟合周期，这样拟合更精准且迭代次数更少
+            # 对于9月1：不足2倍周期的看做一个周期 // 对于1月15：不足1个周期的看做一个周期
             start_list.append(s)
             end_list.append(s + self.fitting_num - 1)
             s += self.fitting_num - 1
@@ -253,7 +256,7 @@ class Epidemic_Model:  # 完整传染病模型
                 U_0[i] = self.U[i][end]
                 R_0[i] = self.R[i][end]
                 D_0[i] = self.D[i][end]
-            print(self.final_para)
+            # print(self.final_para)
 
         self.I = self.A + self.Q + self.U
 
@@ -261,8 +264,8 @@ class Epidemic_Model:  # 完整传染病模型
         t_range = np.arange(0, self.t_num)  # 时间跨度，分成一天份（用于拟合数据）
         t_pre_range = np.arange(self.end + 1, self.end + 1 + self.predict_num)  # 时间跨度（用于预测数据）
 
-        for t in self.new_flow_node:  # 画出浪潮分割节点
-            plt.plot([t, t], [0, 100000])
+        # for t in self.new_flow_node:  # 画出浪潮分割节点
+        #     plt.plot([t, t], [0, 100000])
 
         # 计算出各区域加总在一起的总S、E、A、Q、U、R、D、感染人数、真实人数，并画出图像
         total_S, total_E, total_A, total_Q, total_U, total_R, total_D = [],[],[],[],[],[],[]
@@ -301,16 +304,19 @@ class Epidemic_Model:  # 完整传染病模型
         if self.region_num > 1:  # 画出各区域统计数据
             for i in range(self.region_num):
                 # 拟合部分
-                plt.plot(t_range, self.I[i], label=f'{self.region_name[i]}_I')
-                plt.plot(t_actual_range, self.actual[i], label=f'{self.region_name[i]}_Actual', marker='.')
+                plt.plot(t_range, self.I[i],
+                         label=f'{self.region_name[i]}_I')
+                plt.plot(t_actual_range, self.actual[i],
+                         label=f'{self.region_name[i]}_Actual', marker='.')
                 # 预测部分
-                for j in range(7):  # 7种滚动天数情况
-                    plt.plot(t_pre_range, self.I_pre[j][i])  # 画出滚动预测结果
+                for j in self.try_roll:  # 7种滚动天数情况
+                    plt.plot(t_pre_range, self.I_pre[j][i],
+                             label=f'{self.region_name[i]}_Rolling({j + 1} days)_Predict_I')  # 画出滚动预测结果
 
-                plt.plot(t_pre_range, self.I_pre_direct[i], color='salmon')  # 画出直接预测结果
+                plt.plot(t_pre_range, self.I_pre_direct[i], color='salmon',
+                         label=f'{self.region_name[i]}_Direct_Predict_I')  # 画出直接预测结果
 
         plt.plot(t_actual_range, total_actual, label='Total_Actual', color='orange', marker='.')
-        plt.legend(fontsize=10, facecolor='lightyellow')
 
         # 预测总图线部分
         total_I_pre = [[] for i in range(7)]
@@ -320,26 +326,37 @@ class Epidemic_Model:  # 完整传染病模型
             for j in range(self.region_num):
                 ii_direct += self.I_pre_direct[j][i]
             total_I_pre_direct.append(ii_direct)
-        for k in range(7):
+        for k in self.try_roll:
             for i in range(self.predict_num):
                 ii = 0
                 for j in range(self.region_num):
                     ii += self.I_pre[k][j][i]
                 total_I_pre[k].append(ii)
 
-        for k in range(7):
-            plt.plot(t_pre_range, total_I_pre[k])  # 画出滚动预测结果
+        for k in self.try_roll:
+            plt.plot(t_pre_range, total_I_pre[k], label=f'Rolling({k + 1} days)_Predict_Total_I')  # 画出滚动预测结果
 
-        plt.plot(t_pre_range, total_I_pre_direct, color='salmon')  # 画出直接预测结果
+        plt.plot(t_pre_range, total_I_pre_direct, color='salmon', label=f'Direct_Predict_Total_I')  # 画出直接预测结果
 
-        # month_num = [0,30,61,91,122,153,183,214,244,275]  # 画出年月日坐标
-        # month = ['4/13/20','5/13/20','6/13/20','7/13/20','8/13/20','9/13/20','10/13/20','11/13/20','12/13/20','1/13/21']
-        # plt.xticks(month_num, month)
+        # month_num = [0, 19, 50, 80, 111, 142, 172, 203, 233, 264, 295]  # 画出年月日坐标（用于21-1-15训练集）
+        # month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20', '11/1/20', '12/1/20',
+        #          '1/1/21', '2/1/21']
 
-        plt.title('SEYIAQURD Model')
-        plt.legend()
-        plt.xlabel('Day')
-        plt.ylabel('Number')
+        month_num = [0, 19, 50, 80, 111, 142, 172]  # 画出年月日坐标（用于20-9-1训练集）
+        month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20']
+
+        plt.xticks(month_num, month, fontsize=15)
+        plt.yticks(fontsize=15)  # 设置纵轴字体大小
+        # plt.axvline(x=278, color='seagreen')  # 画出训练集分界线（用于21-1-15训练集）
+        plt.axvline(x=142, color='seagreen')  # 画出训练集分界线（用于20-9-1训练集）
+
+        # plt.title('Multipeak SEIYAQURD Model')
+        plt.title(f'{self.region_name[0]} - Multipeak SEIYAQURD Model', fontsize=20)  # 单区域时，作画标题用这个
+
+        plt.legend(fontsize=15, facecolor='lightyellow')
+
+        plt.xlabel('Time point (Day)', fontsize=20)
+        plt.ylabel('Infected Numbers', fontsize=20)
         plt.show()
 
     def observe_para(self,observe_para):  # 函数：用于显示参数变化图

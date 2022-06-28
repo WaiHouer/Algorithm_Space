@@ -30,7 +30,7 @@ class SEAQURD:
         self.actual = [[] for i in range(self.region_num)]
         for i in range(self.region_num):
             for j in range(self.T):
-                self.actual[i].append(self.sheet[i].cell(1,self.start+j+89).value)
+                self.actual[i].append(self.sheet[i].cell(1, self.start + j + 88).value)
         # print(self.actual)
         print('读取数据完毕')
 
@@ -137,7 +137,6 @@ class SEAQURD:
         t_range = np.arange(0, self.T)  # 时间跨度，分成一天份
 
         for i in range(len(self.region)):
-            plt.subplot(2,3,i+1)
 
             # plt.plot(t_range, self.S[i], color='darkblue', label='S', marker='.')  # 画出易感者
             plt.plot(t_range, self.E[i], color='orange', label='E', marker='.')  # 画出潜伏着
@@ -174,13 +173,13 @@ class SEAQURD:
 
 
 if __name__ == '__main__':
-    SEAQURD(1,'American_data.xlsx',0,0+210-1,
-            [39937489],
-            [39937489-23403],
+    SEAQURD(1,'American_data.xlsx',0,0+500-1,
+            [7029917],
+            [7029917-11258],
             [0],
             [0],
             [0],
-            [23403],
+            [11258],
             [0],
             [0],
             [[0.06],[0.065],[0.065],
