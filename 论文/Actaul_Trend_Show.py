@@ -74,7 +74,7 @@ class Actual_Trend_Show:  # 完整传染病模型
                      arrowprops=dict(facecolor='black', shrink=0.5, width=1, headwidth=1), fontsize=13)
         plt.plot([12, 289], [350000, 350000], linestyle='--')
         # case 2 预测区间横线+说明
-        plt.annotate(f'Prediction Ending point (Case 2)\n(16 Jan 2021 ~ 15 Feb 2021)', xy=(304, 550000), xytext=(233, 570000),
+        plt.annotate(f'Prediction Period (Case 2)\n(16 Jan 2021 ~ 15 Feb 2021)', xy=(304, 550000), xytext=(233, 570000),
                      arrowprops=dict(facecolor='black', shrink=0.5, width=1, headwidth=1), fontsize=13)
         plt.plot([289, 319], [550000, 550000], linestyle='--')
 
