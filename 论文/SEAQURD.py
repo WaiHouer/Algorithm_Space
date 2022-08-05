@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 
 class SEAQURD:
     def __init__(self,region_num,file_name,start,end,total_population,S,E,A,Q,U,R,D,para):
-        self.book = load_workbook(file_name)
+        # self.book = load_workbook(file_name)
+        self.book = file_name  # 若直接传入book，则用此行
         self.sheet = []
         self.region_num = region_num
         for i in range(self.region_num):

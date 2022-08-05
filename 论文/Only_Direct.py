@@ -171,7 +171,7 @@ class Epidemic_Model:  # 完整传染病模型
                 # （1）MCMC算法，参数拟合
                 # 输入：地区数量，文件名，起点，终点，总人数，各群体初值
                 # 拟合后得到：para，为参数的集合列表
-                sample = Metropolis_Hastings(self.region_num,self.file_name,start,end,self.total_population
+                sample = Metropolis_Hastings(self.region_num,self.book,start,end,self.total_population
                                              ,S_0,E_0,A_0,Q_0,U_0,R_0,D_0)
                 # print(sample.para)
 
@@ -184,7 +184,7 @@ class Epidemic_Model:  # 完整传染病模型
                 # 输入：地区数量，文件名，起点，终点，总人数，各群体初值，拟合好的参数
                 # 模型运算后得到：各群体拟合数量
                 # 注：拟合数量的list长度，随着起点的向后推移而逐渐变短
-                fitting = SEAQURD(self.region_num,self.file_name,start,end,self.total_population
+                fitting = SEAQURD(self.region_num,self.book,start,end,self.total_population
                                   ,S_0,E_0,A_0,Q_0,U_0,R_0,D_0,sample.para)
 
                 # 将真实感染人数list进行切片，目的是与拟合list长度和对应区间保持一致
@@ -420,7 +420,7 @@ class Epidemic_Model:  # 完整传染病模型
                     R_0_pre[j] = self.R[j][-1]
                     D_0_pre[j] = self.D[j][-1]
 
-                fitting = SEAQURD(self.region_num,self.file_name,end,end + rolling_num,self.total_population,
+                fitting = SEAQURD(self.region_num,self.book,end,end + rolling_num,self.total_population,
                                   S_0_pre,E_0_pre,A_0_pre,Q_0_pre,U_0_pre,R_0_pre,D_0_pre,self.final_para)
                 for j in range(self.region_num):  # 存入最终预测结果
                     for b in range(rolling_num):
@@ -456,10 +456,10 @@ class Epidemic_Model:  # 完整传染病模型
                 D_pre_tem = np.zeros((self.region_num, self.fitting_num))
 
                 while True:
-                    sample = Metropolis_Hastings(self.region_num,self.file_name,start_train,end_train,
+                    sample = Metropolis_Hastings(self.region_num,self.book,start_train,end_train,
                                                  self.total_population,
                                                  S_0,E_0,A_0,Q_0,U_0,R_0,D_0)
-                    fitting = SEAQURD(self.region_num,self.file_name,start_train,end_train,self.total_population,
+                    fitting = SEAQURD(self.region_num,self.book,start_train,end_train,self.total_population,
                                       S_0,E_0,A_0,Q_0,U_0,R_0,D_0,sample.para)
 
                     act = []
@@ -518,7 +518,7 @@ class Epidemic_Model:  # 完整传染病模型
                     R_0_pre[a] = R_pre_tem[a][-1]
                     D_0_pre[a] = D_pre_tem[a][-1]
 
-                fitting = SEAQURD(self.region_num, self.file_name, end, end + rolling_num, self.total_population,
+                fitting = SEAQURD(self.region_num, self.book, end, end + rolling_num, self.total_population,
                                   S_0_pre, E_0_pre, A_0_pre, Q_0_pre, U_0_pre, R_0_pre, D_0_pre, self.final_para)
                 for j in range(self.region_num):  # 存入最终预测结果
                     for b in range(rolling_num):
@@ -563,7 +563,7 @@ class Epidemic_Model:  # 完整传染病模型
             R_0[i] = self.R[i][-1]
             D_0[i] = self.D[i][-1]
 
-        fitting = SEAQURD(self.region_num, self.file_name, self.end, self.end + self.predict_num,
+        fitting = SEAQURD(self.region_num, self.book, self.end, self.end + self.predict_num,
                           self.total_population, S_0, E_0, A_0, Q_0, U_0, R_0, D_0, self.final_para)
 
         for i in range(self.region_num):

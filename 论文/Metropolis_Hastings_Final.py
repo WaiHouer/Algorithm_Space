@@ -11,7 +11,8 @@ from Region import Region
 class Metropolis_Hastings:  # Metropolis_Hastings采样算法
     # 输入：文件名，起点，终点，总人数，各群体人数初值
     def __init__(self,region_num,file_name,start,end,total_population,S,E,A,Q,U,R,D):
-        self.book = load_workbook(file_name)
+        # self.book = load_workbook(file_name)
+        self.book = file_name  # 若直接传入book，则用此行
         self.sheet = []
         self.region_num = region_num
         for i in range(self.region_num):
@@ -137,20 +138,35 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             q_bef = q
             c_0_bef = c_0
 
-            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE
-            beta_e = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
-            beta_a = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
-            beta_u = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
-            alpha = [random.uniform(0.15, 0.25) for i in range(self.region_num)]
+            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE（美国-需要继续缩小）
+            # beta_e = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
+            # beta_a = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
+            # beta_u = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
+            # alpha = [random.uniform(0.15, 0.25) for i in range(self.region_num)]
+            # delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            # delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            # delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            # gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
+            # gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
+            # gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
+            # p = random.uniform(0.1,0.5)
+            # q = random.uniform(0.5,0.8)
+            # c_0 = random.uniform(0.96,1)
+            '--------------------------------------------------------'
+            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE（加拿大）
+            beta_e = [random.uniform(0.03, 0.06) for i in range(self.region_num)]
+            beta_a = [random.uniform(0.03, 0.06) for i in range(self.region_num)]
+            beta_u = [random.uniform(0.03, 0.06) for i in range(self.region_num)]
+            alpha = [random.uniform(0.2, 0.3) for i in range(self.region_num)]
             delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
             gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
             gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            p = random.uniform(0.1,0.5)
-            q = random.uniform(0.5,0.8)
-            c_0 = random.uniform(0.96,1)
+            p = random.uniform(0.3, 0.6)
+            q = random.uniform(0.5, 0.8)
+            c_0 = random.uniform(0.98, 1)
 
             SSE = self.algorithm(S, E, A, Q, U, R, D, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u,
                                  gamma_a, gamma_q, gamma_u, p, q, c_0)

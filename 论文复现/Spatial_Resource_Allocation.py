@@ -204,7 +204,7 @@ class Spatial_Resource_Allocation:
                         a_2[i] = round(E_0_pre[i] / total_E * b)  # 四舍五入取整，按比例分配
                     # 每次都从头加即可（因为是累加的嘛），这样做的话，在非分配时间点就可以只计算人数即可
                     for tt in range(t, self.predict_num):
-                        self.a_2[tt] = a_2
+                        self.a_2[tt] = a_2  # （好像是+=是对的）
 
                 simulation_b = SEAQURD(self.region_num, self.file_name, start, start + 1, self.total_population,
                                        S_0_pre, E_0_pre, A_0_pre, Q_0_pre, U_0_pre, R_0_pre, D_0_pre,

@@ -17,7 +17,7 @@ class Epidemic_Model:  # 完整传染病模型
         self.file_name = file_name  # 文件名
         self.book = load_workbook(file_name)  # 加载文件
 
-        self.region_num = 1  # 地区数量
+        self.region_num = 3  # 地区数量
 
         self.sheet = []  # 加载每个地区（按顺序：0，1，2......）
         self.region_num = self.region_num
@@ -30,13 +30,12 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 142  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
+        self.end = 278  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
         self.t_num = self.end - self.start + 1  # 时间长度
 
         self.fitting_num = 30  # 拟合小周期
 
         self.predict_num = 30  # 预测未来天数
-
 
         self.actual = [[] for i in range(self.region_num)]  # 真实感染人数（从4月13号开始）
         for i in range(self.region_num):
@@ -111,7 +110,7 @@ class Epidemic_Model:  # 完整传染病模型
 
         self.pre_time_start = time.time()  # 对滚动预测时间计时
         self.final_para_fixed = self.final_para  # 固定最终参数（方便针对不同滚动情况，进行初始化）
-        self.try_roll = [2, 6]  # 对滚动天数为3，7各尝试一下
+        self.try_roll = [ 6]  # 对滚动天数为3，7各尝试一下
         for i in self.try_roll:
             print(f'滚动预测算法开始-滚动{i+1}天')
             self.rolling_num = i + 1
@@ -171,7 +170,7 @@ class Epidemic_Model:  # 完整传染病模型
                 # （1）MCMC算法，参数拟合
                 # 输入：地区数量，文件名，起点，终点，总人数，各群体初值
                 # 拟合后得到：para，为参数的集合列表
-                sample = Metropolis_Hastings(self.region_num,self.file_name,start,end,self.total_population
+                sample = Metropolis_Hastings(self.region_num,self.book,start,end,self.total_population
                                              ,S_0,E_0,A_0,Q_0,U_0,R_0,D_0)
                 # print(sample.para)
 
@@ -184,7 +183,7 @@ class Epidemic_Model:  # 完整传染病模型
                 # 输入：地区数量，文件名，起点，终点，总人数，各群体初值，拟合好的参数
                 # 模型运算后得到：各群体拟合数量
                 # 注：拟合数量的list长度，随着起点的向后推移而逐渐变短
-                fitting = SEAQURD(self.region_num,self.file_name,start,end,self.total_population
+                fitting = SEAQURD(self.region_num,self.book,start,end,self.total_population
                                   ,S_0,E_0,A_0,Q_0,U_0,R_0,D_0,sample.para)
 
                 # 将真实感染人数list进行切片，目的是与拟合list长度和对应区间保持一致
@@ -256,7 +255,19 @@ class Epidemic_Model:  # 完整传染病模型
                 U_0[i] = self.U[i][end]
                 R_0[i] = self.R[i][end]
                 D_0[i] = self.D[i][end]
-            # print(self.final_para)
+            print('beta_e', self.final_para[0])
+            print('beta_a', self.final_para[1])
+            print('beta_u', self.final_para[2])
+            print('alpha', self.final_para[3])
+            print('delta_a', self.final_para[4])
+            print('delta_q', self.final_para[5])
+            print('delta_u', self.final_para[6])
+            print('gamma_a', self.final_para[7])
+            print('gamma_q', self.final_para[8])
+            print('gamma_u', self.final_para[9])
+            print('p', self.final_para[10])
+            print('q', self.final_para[11])
+            print('c_0', self.final_para[12])
 
         self.I = self.A + self.Q + self.U
 
@@ -338,17 +349,17 @@ class Epidemic_Model:  # 完整传染病模型
 
         plt.plot(t_pre_range, total_I_pre_direct, color='salmon', label=f'Direct_Predict_Total_I')  # 画出直接预测结果
 
-        # month_num = [0, 19, 50, 80, 111, 142, 172, 203, 233, 264, 295]  # 画出年月日坐标（用于21-1-15训练集）
-        # month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20', '11/1/20', '12/1/20',
-        #          '1/1/21', '2/1/21']
+        month_num = [0, 19, 50, 80, 111, 142, 172, 203, 233, 264, 295]  # 画出年月日坐标（用于21-1-15训练集）
+        month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20', '11/1/20', '12/1/20',
+                 '1/1/21', '2/1/21']
 
-        month_num = [0, 19, 50, 80, 111, 142, 172]  # 画出年月日坐标（用于20-9-1训练集）
-        month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20']
+        # month_num = [0, 19, 50, 80, 111, 142, 172]  # 画出年月日坐标（用于20-9-1训练集）
+        # month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20']
 
         plt.xticks(month_num, month, fontsize=15)
         plt.yticks(fontsize=15)  # 设置纵轴字体大小
-        # plt.axvline(x=278, color='seagreen')  # 画出训练集分界线（用于21-1-15训练集）
-        plt.axvline(x=142, color='seagreen')  # 画出训练集分界线（用于20-9-1训练集）
+        plt.axvline(x=278, color='seagreen')  # 画出训练集分界线（用于21-1-15训练集）
+        # plt.axvline(x=142, color='seagreen')  # 画出训练集分界线（用于20-9-1训练集）
 
         # plt.title('Multipeak SEIYAQURD Model')
         plt.title(f'{self.region_name[0]} - Multipeak SEIYAQURD Model', fontsize=20)  # 单区域时，作画标题用这个
@@ -417,7 +428,7 @@ class Epidemic_Model:  # 完整传染病模型
                     R_0_pre[j] = self.R[j][-1]
                     D_0_pre[j] = self.D[j][-1]
 
-                fitting = SEAQURD(self.region_num,self.file_name,end,end + rolling_num,self.total_population,
+                fitting = SEAQURD(self.region_num,self.book,end,end + rolling_num,self.total_population,
                                   S_0_pre,E_0_pre,A_0_pre,Q_0_pre,U_0_pre,R_0_pre,D_0_pre,self.final_para)
                 for j in range(self.region_num):  # 存入最终预测结果
                     for b in range(rolling_num):
@@ -453,10 +464,10 @@ class Epidemic_Model:  # 完整传染病模型
                 D_pre_tem = np.zeros((self.region_num, self.fitting_num))
 
                 while True:
-                    sample = Metropolis_Hastings(self.region_num,self.file_name,start_train,end_train,
+                    sample = Metropolis_Hastings(self.region_num,self.book,start_train,end_train,
                                                  self.total_population,
                                                  S_0,E_0,A_0,Q_0,U_0,R_0,D_0)
-                    fitting = SEAQURD(self.region_num,self.file_name,start_train,end_train,self.total_population,
+                    fitting = SEAQURD(self.region_num,self.book,start_train,end_train,self.total_population,
                                       S_0,E_0,A_0,Q_0,U_0,R_0,D_0,sample.para)
 
                     act = []
@@ -515,7 +526,7 @@ class Epidemic_Model:  # 完整传染病模型
                     R_0_pre[a] = R_pre_tem[a][-1]
                     D_0_pre[a] = D_pre_tem[a][-1]
 
-                fitting = SEAQURD(self.region_num, self.file_name, end, end + rolling_num, self.total_population,
+                fitting = SEAQURD(self.region_num, self.book, end, end + rolling_num, self.total_population,
                                   S_0_pre, E_0_pre, A_0_pre, Q_0_pre, U_0_pre, R_0_pre, D_0_pre, self.final_para)
                 for j in range(self.region_num):  # 存入最终预测结果
                     for b in range(rolling_num):
@@ -560,7 +571,7 @@ class Epidemic_Model:  # 完整传染病模型
             R_0[i] = self.R[i][-1]
             D_0[i] = self.D[i][-1]
 
-        fitting = SEAQURD(self.region_num, self.file_name, self.end, self.end + self.predict_num,
+        fitting = SEAQURD(self.region_num, self.book, self.end, self.end + self.predict_num,
                           self.total_population, S_0, E_0, A_0, Q_0, U_0, R_0, D_0, self.final_para)
 
         for i in range(self.region_num):
@@ -634,4 +645,4 @@ class Epidemic_Model:  # 完整传染病模型
 
 
 if __name__ == '__main__':
-    Epidemic_Model('American_data.xlsx')
+    Epidemic_Model('Canada_data.xlsx')
