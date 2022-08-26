@@ -17,7 +17,7 @@ class Epidemic_Model:  # 完整传染病模型
         self.file_name = file_name  # 文件名
         self.book = load_workbook(file_name)  # 加载文件
 
-        self.region_num = 1  # 地区数量
+        self.region_num = 12  # 地区数量
 
         self.sheet = []  # 加载每个地区（按顺序：0，1，2......）
         self.region_num = self.region_num
@@ -33,7 +33,7 @@ class Epidemic_Model:  # 完整传染病模型
         self.end = 142  # 结束时间点（20.4.1-21.1.15，此处为289，文件起点77）（20.4.1-21.9.1，此处为153，文件起点77）
         self.t_num = self.end - self.start + 1  # 时间长度
 
-        self.fitting_num = 30  # 拟合小周期
+        self.fitting_num = 15  # 拟合小周期
 
         self.predict_num = 30  # 预测未来天数
 
@@ -257,6 +257,19 @@ class Epidemic_Model:  # 完整传染病模型
                 R_0[i] = self.R[i][end]
                 D_0[i] = self.D[i][end]
             # print(self.final_para)
+            print('beta_e', self.final_para[0])
+            print('beta_a', self.final_para[1])
+            print('beta_u', self.final_para[2])
+            print('alpha', self.final_para[3])
+            print('delta_a', self.final_para[4])
+            print('delta_q', self.final_para[5])
+            print('delta_u', self.final_para[6])
+            print('gamma_a', self.final_para[7])
+            print('gamma_q', self.final_para[8])
+            print('gamma_u', self.final_para[9])
+            print('p', self.final_para[10])
+            print('q', self.final_para[11])
+            print('c_0', self.final_para[12])
 
         self.I = self.A + self.Q + self.U
 
@@ -637,4 +650,4 @@ class Epidemic_Model:  # 完整传染病模型
 
 
 if __name__ == '__main__':
-    Epidemic_Model('American_data.xlsx')
+    Epidemic_Model('Canada_data.xlsx')

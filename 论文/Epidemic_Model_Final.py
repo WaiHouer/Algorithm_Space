@@ -17,7 +17,7 @@ class Epidemic_Model:  # 完整传染病模型
         self.file_name = file_name  # 文件名
         self.book = load_workbook(file_name)  # 加载文件
 
-        self.region_num = 3  # 地区数量
+        self.region_num = 9  # 地区数量
 
         self.sheet = []  # 加载每个地区（按顺序：0，1，2......）
         self.region_num = self.region_num
@@ -30,12 +30,12 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 278  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
+        self.end = 140  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
         self.t_num = self.end - self.start + 1  # 时间长度
 
-        self.fitting_num = 30  # 拟合小周期
+        self.fitting_num = 14  # 拟合小周期
 
-        self.predict_num = 30  # 预测未来天数
+        self.predict_num = 28  # 预测未来天数
 
         self.actual = [[] for i in range(self.region_num)]  # 真实感染人数（从4月13号开始）
         for i in range(self.region_num):
@@ -107,6 +107,9 @@ class Epidemic_Model:  # 完整传染病模型
 
         print(f'直接预测算法开始')
         self.direct_predict()  # 直接预测算法（一定要在滚动预测前进行，因为滚动预测会更新掉final_para）
+        '---提前看直接预测的MAPE，若此处启用，则滚动后的直接预测MAPE无效，需要注意'
+        self.mean_absolute_percentage_error()  # 计算MAPE
+        print(f'各区域直接预测MPAE：{self.MAPE_direct_pre_list}')
 
         self.pre_time_start = time.time()  # 对滚动预测时间计时
         self.final_para_fixed = self.final_para  # 固定最终参数（方便针对不同滚动情况，进行初始化）
@@ -119,7 +122,8 @@ class Epidemic_Model:  # 完整传染病模型
             self.mean_absolute_percentage_error()  # 计算MAPE
             print(f'滚动天数：{i + 1}天')
             print(f'总体滚动预测MAPE：{self.MAPE_rolling_pre[i]}，总体直接预测MAPE：{self.MAPE_direct_pre}')
-            print(f'各区域滚动预测MPAE：{self.MAPE_rolling_pre_list[i]}，各区域直接预测MPAE{self.MAPE_direct_pre_list}')
+            print(f'各区域滚动预测MPAE：{self.MAPE_rolling_pre_list[i]}')
+            print(f'各区域直接预测MPAE：{self.MAPE_direct_pre_list}')
             print(self.MAPE_rolling_pre_list)
             self.final_para = self.final_para_fixed  # 重置最终参数
             self.MAPE_direct_pre = 0
@@ -150,7 +154,7 @@ class Epidemic_Model:  # 完整传染病模型
         e = self.end  # 初始化拟合终点（始终不变）
         start_list = []
         end_list = []
-        while e - s + 1 >= self.fitting_num * 2:  # 每30天为一个拟合周期，这样拟合更精准且迭代次数更少
+        while e - s + 1 >= self.fitting_num:  # 每30天为一个拟合周期，这样拟合更精准且迭代次数更少
             # 对于9月1：不足2倍周期的看做一个周期 // 对于1月15：不足1个周期的看做一个周期
             start_list.append(s)
             end_list.append(s + self.fitting_num - 1)
@@ -212,7 +216,16 @@ class Epidemic_Model:  # 完整传染病模型
                 # 得到：新浪潮开始节点peak_node
 
                 print('多峰算法开始')
-                peak = Multipeak_judge(total_actual,total_S,total_I)
+                # peak = Multipeak_judge(total_actual,total_S,total_I)  # 总体判断多峰
+                '------------------------------'
+                peak = Multipeak_judge(total_actual,total_S,total_I)  # 首先，总体判断一次
+                # print(f'总体判断节点：{peak.peak_node}')
+                for j in range(self.region_num):
+                    peak_tem = Multipeak_judge(act[j],fitting.S[j],fitting.I[j])  # 各区域分别判断，取最小值
+                    # print(f'区域{j}的判断节点：{peak_tem.peak_node}')
+                    if peak_tem.peak_node < peak.peak_node:
+                        peak = peak_tem
+                print(f'最终节点：{peak.peak_node}')
 
                 for i in range(start,start+peak.peak_node+1):  # 至此，将该区间的结果存入“最终”结果中（修改：+1）
                     # 注意：“最终”list是从“起点”开始的，拟合结果直接从头开始的
@@ -311,7 +324,7 @@ class Epidemic_Model:  # 完整传染病模型
         # plt.plot(t_range, total_U, label='Total_U', color='green')
         # plt.plot(t_range, total_R, label='Total_R', color='darkblue')
         # plt.plot(t_range, total_D, label='Total_D', color='black')
-        plt.plot(t_range, total_I, label='Total_I', color='darkred')
+        # plt.plot(t_range, total_I, label='Total_I', color='darkred')
         if self.region_num > 1:  # 画出各区域统计数据
             for i in range(self.region_num):
                 # 拟合部分
@@ -327,7 +340,7 @@ class Epidemic_Model:  # 完整传染病模型
                 plt.plot(t_pre_range, self.I_pre_direct[i], color='salmon',
                          label=f'{self.region_name[i]}_Direct_Predict_I')  # 画出直接预测结果
 
-        plt.plot(t_actual_range, total_actual, label='Total_Actual', color='orange', marker='.')
+        # plt.plot(t_actual_range, total_actual, label='Total_Actual', color='orange', marker='.')
 
         # 预测总图线部分
         total_I_pre = [[] for i in range(7)]
@@ -344,27 +357,27 @@ class Epidemic_Model:  # 完整传染病模型
                     ii += self.I_pre[k][j][i]
                 total_I_pre[k].append(ii)
 
-        for k in self.try_roll:
-            plt.plot(t_pre_range, total_I_pre[k], label=f'Rolling({k + 1} days)_Predict_Total_I')  # 画出滚动预测结果
+        # for k in self.try_roll:
+        #     plt.plot(t_pre_range, total_I_pre[k], label=f'Rolling({k + 1} days)_Predict_Total_I')  # 画出滚动预测结果
 
-        plt.plot(t_pre_range, total_I_pre_direct, color='salmon', label=f'Direct_Predict_Total_I')  # 画出直接预测结果
+        # plt.plot(t_pre_range, total_I_pre_direct, color='salmon', label=f'Direct_Predict_Total_I')  # 画出直接预测结果
 
-        month_num = [0, 19, 50, 80, 111, 142, 172, 203, 233, 264, 295]  # 画出年月日坐标（用于21-1-15训练集）
-        month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20', '11/1/20', '12/1/20',
-                 '1/1/21', '2/1/21']
+        # month_num = [0, 19, 50, 80, 111, 142, 172, 203, 233, 264, 295]  # 画出年月日坐标（用于21-1-15训练集）
+        # month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20', '11/1/20', '12/1/20',
+        #          '1/1/21', '2/1/21']
 
-        # month_num = [0, 19, 50, 80, 111, 142, 172]  # 画出年月日坐标（用于20-9-1训练集）
-        # month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20']
+        month_num = [0, 19, 50, 80, 111, 142, 172]  # 画出年月日坐标（用于20-9-1训练集）
+        month = ['4/12/20', '5/1/20', '6/1/20', '7/1/20', '8/1/20', '9/1/20', '10/1/20']
 
         plt.xticks(month_num, month, fontsize=15)
         plt.yticks(fontsize=15)  # 设置纵轴字体大小
-        plt.axvline(x=278, color='seagreen')  # 画出训练集分界线（用于21-1-15训练集）
+        # plt.axvline(x=278, color='seagreen')  # 画出训练集分界线（用于21-1-15训练集）
         # plt.axvline(x=142, color='seagreen')  # 画出训练集分界线（用于20-9-1训练集）
 
         # plt.title('Multipeak SEIYAQURD Model')
         plt.title(f'{self.region_name[0]} - Multipeak SEIYAQURD Model', fontsize=20)  # 单区域时，作画标题用这个
 
-        plt.legend(fontsize=15, facecolor='lightyellow')
+        # plt.legend(fontsize=15, facecolor='lightyellow')  # 图例显示
 
         plt.xlabel('Time point (Day)', fontsize=20)
         plt.ylabel('Infected Numbers', fontsize=20)
@@ -488,8 +501,17 @@ class Epidemic_Model:  # 完整传染病模型
                         total_S.append(ss)
                         total_actual.append(aa)
 
-                    # print('多峰算法开始')
-                    peak = Multipeak_judge(total_actual,total_S,total_I)
+                    print('多峰算法开始')
+                    # peak = Multipeak_judge(total_actual,total_S,total_I)
+                    '------------------------------'
+                    peak = Multipeak_judge(total_actual, total_S, total_I)  # 首先，总体判断一次
+                    # print(f'总体判断节点：{peak.peak_node}')
+                    for j in range(self.region_num):
+                        peak_tem = Multipeak_judge(act[j], fitting.S[j], fitting.I[j])  # 各区域分别判断，取最小值
+                        # print(f'区域{j}的判断节点：{peak_tem.peak_node}')
+                        if peak_tem.peak_node < peak.peak_node:
+                            peak = peak_tem
+                    print(f'最终节点：{peak.peak_node}')
 
                     for a in range(start_train,start_train + peak.peak_node + 1):  # 存入临时记录器中
                         for b in range(self.region_num):
@@ -645,4 +667,4 @@ class Epidemic_Model:  # 完整传染病模型
 
 
 if __name__ == '__main__':
-    Epidemic_Model('Canada_data.xlsx')
+    Epidemic_Model('American_Census_Region_data.xlsx')

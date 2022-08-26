@@ -5,6 +5,8 @@ import random
 import math
 import time
 from Region import Region
+from numba import njit
+from numba import typed
 '''S：易感者、E：潜伏者、I：感染者、R：治愈者'''
 
 
@@ -48,7 +50,7 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         self.dist = self.dist_type_1()
         # self.dist = self.dist_type_2()
 
-        self.iter = 50000  # 采样算法迭代次数（次数——收敛？？？？）
+        self.iter = 500000  # 采样算法迭代次数（次数——收敛？？？？）
 
         self.para = []  # 用于存放最终拟合好的参数集合
 
@@ -138,34 +140,19 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             q_bef = q
             c_0_bef = c_0
 
-            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE（美国-需要继续缩小）
-            # beta_e = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
-            # beta_a = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
-            # beta_u = [random.uniform(0.02, 0.08) for i in range(self.region_num)]
-            # alpha = [random.uniform(0.15, 0.25) for i in range(self.region_num)]
-            # delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-            # delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-            # delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-            # gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            # gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            # gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            # p = random.uniform(0.1,0.5)
-            # q = random.uniform(0.5,0.8)
-            # c_0 = random.uniform(0.96,1)
-            '--------------------------------------------------------'
-            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE（加拿大）
-            beta_e = [random.uniform(0.03, 0.06) for i in range(self.region_num)]
-            beta_a = [random.uniform(0.03, 0.06) for i in range(self.region_num)]
-            beta_u = [random.uniform(0.03, 0.06) for i in range(self.region_num)]
+            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE（美国9区域）
+            beta_e = [random.uniform(0, 0.08) for i in range(self.region_num)]
+            beta_a = [random.uniform(0, 0.08) for i in range(self.region_num)]
+            beta_u = [random.uniform(0, 0.08) for i in range(self.region_num)]
             alpha = [random.uniform(0.2, 0.3) for i in range(self.region_num)]
             delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
             delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
-            gamma_a = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            gamma_q = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            gamma_u = [random.uniform(0, 0.03) for i in range(self.region_num)]
-            p = random.uniform(0.3, 0.6)
-            q = random.uniform(0.5, 0.8)
+            gamma_a = [random.uniform(0, 0.05) for i in range(self.region_num)]
+            gamma_q = [random.uniform(0, 0.05) for i in range(self.region_num)]
+            gamma_u = [random.uniform(0, 0.05) for i in range(self.region_num)]
+            p = random.uniform(0, 1)
+            q = random.uniform(0, 1)
             c_0 = random.uniform(0.98, 1)
 
             SSE = self.algorithm(S, E, A, Q, U, R, D, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u,
@@ -200,38 +187,49 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
 
     def algorithm(self,S,E,A,Q,U,R,D,beta_e,beta_a,beta_u,alpha,delta_a,delta_q,delta_u,gamma_a,gamma_q,gamma_u,p,q,c_0):
         self.m_calculate(c_0)  # 放在algorithm函数开头，代表也需要拟合
+        # for i in range(len(self.region)):
+        #
+        #     for t in range(1, self.T):
+        #
+        #         e_rate = 0
+        #         a_rate = 0
+        #         u_rate = 0
+        #         for j in range(len(self.region)):
+        #             e_rate += E[j][t - 1] / self.region[j].N * beta_e[j] * self.m[i][j]
+        #             a_rate += A[j][t - 1] / self.region[j].N * beta_a[j] * self.m[i][j]
+        #             u_rate += U[j][t - 1] / self.region[j].N * beta_u[j] * self.m[i][j]
+        #
+        #         S[i][t] = S[i][t - 1] - S[i][t - 1] * (e_rate + a_rate + u_rate)
+        #         E[i][t] = E[i][t - 1] + S[i][t - 1] * (e_rate + a_rate + u_rate) - alpha[i] * E[i][t - 1]
+        #         A[i][t] = A[i][t - 1] + p * alpha[i] * E[i][t - 1] - delta_a[i] * A[i][t - 1] - gamma_a[i] * A[i][t - 1]
+        #         Q[i][t] = Q[i][t - 1] + (1 - p) * q * alpha[i] * E[i][t - 1] \
+        #                   - delta_q[i] * Q[i][t - 1] - gamma_q[i] * Q[i][t - 1]
+        #         U[i][t] = U[i][t - 1] + (1 - p) * (1 - q) * alpha[i] * E[i][t - 1] \
+        #                   - delta_u[i] * U[i][t - 1] - gamma_u[i] * U[i][t - 1]
+        #         R[i][t] = R[i][t - 1] + gamma_a[i] * A[i][t - 1] \
+        #                   + gamma_q[i] * Q[i][t - 1] \
+        #                   + gamma_u[i] * U[i][t - 1]
+        #         D[i][t] = D[i][t - 1] + delta_a[i] * A[i][t - 1] \
+        #                   + delta_q[i] * Q[i][t - 1] \
+        #                   + delta_u[i] * U[i][t - 1]
+        #
+        # I = A + Q + U
+        # SSE = 0
+        #
+        # for i in range(self.T):  # SSE计算方法：对各区域的各感染人数最小二乘（且乘以感染者比例系数去除人口影响）
+        #     for j in range(self.region_num):
+        #         SSE += ((I[j][i] - self.actual[j][i]) * self.actual_ratio_list[j][i]) ** 2
+        #
+        # return SSE
+        '----'
+        region_N = []
         for i in range(len(self.region)):
-
-            for t in range(1, self.T):
-
-                e_rate = 0
-                a_rate = 0
-                u_rate = 0
-                for j in range(len(self.region)):
-                    e_rate += E[j][t - 1] / self.region[j].N * beta_e[j] * self.m[i][j]
-                    a_rate += A[j][t - 1] / self.region[j].N * beta_a[j] * self.m[i][j]
-                    u_rate += U[j][t - 1] / self.region[j].N * beta_u[j] * self.m[i][j]
-
-                S[i][t] = S[i][t - 1] - S[i][t - 1] * (e_rate + a_rate + u_rate)
-                E[i][t] = E[i][t - 1] + S[i][t - 1] * (e_rate + a_rate + u_rate) - alpha[i] * E[i][t - 1]
-                A[i][t] = A[i][t - 1] + p * alpha[i] * E[i][t - 1] - delta_a[i] * A[i][t - 1] - gamma_a[i] * A[i][t - 1]
-                Q[i][t] = Q[i][t - 1] + (1 - p) * q * alpha[i] * E[i][t - 1] \
-                          - delta_q[i] * Q[i][t - 1] - gamma_q[i] * Q[i][t - 1]
-                U[i][t] = U[i][t - 1] + (1 - p) * (1 - q) * alpha[i] * E[i][t - 1] \
-                          - delta_u[i] * U[i][t - 1] - gamma_u[i] * U[i][t - 1]
-                R[i][t] = R[i][t - 1] + gamma_a[i] * A[i][t - 1] \
-                          + gamma_q[i] * Q[i][t - 1] \
-                          + gamma_u[i] * U[i][t - 1]
-                D[i][t] = D[i][t - 1] + delta_a[i] * A[i][t - 1] \
-                          + delta_q[i] * Q[i][t - 1] \
-                          + delta_u[i] * U[i][t - 1]
-        I = A + Q + U
-        SSE = 0
-
-        for i in range(self.T):  # SSE计算方法：对各区域的各感染人数最小二乘（且乘以感染者比例系数去除人口影响）
-            for j in range(self.region_num):
-                SSE += ((I[j][i] - self.actual[j][i]) * self.actual_ratio_list[j][i]) ** 2
-
+            region_N.append(self.region[i].N)
+        SSE = al(S,E,A,Q,U,R,D,
+                 np.array(beta_e),np.array(beta_a),np.array(beta_u),np.array(alpha),
+                 np.array(delta_a),np.array(delta_q),np.array(delta_u),
+                 np.array(gamma_a),np.array(gamma_q),np.array(gamma_u),np.array(p),np.array(q),
+                 self.m,np.array(region_N),self.region_num,self.T,np.array(self.actual),self.actual_ratio_list)
         return SSE
 
     def m_calculate(self,c_0):
@@ -273,6 +271,47 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
         dist[1][2] = dist[2][1] = 1 / 24
 
         return dist
+
+
+@njit()  # 加速！！！！！！！
+def al(S,E,A,Q,U,R,D,
+       beta_e,beta_a,beta_u,alpha,delta_a,delta_q,delta_u,gamma_a,gamma_q,gamma_u,p,q,
+       m,region_N,region_num,T,actual,actual_ratio_list):
+    for i in range(region_num):
+
+        for t in range(1, T):
+
+            e_rate = 0
+            a_rate = 0
+            u_rate = 0
+            for j in range(region_num):
+                e_rate += E[j][t - 1] / region_N[j] * beta_e[j] * m[i][j]
+                a_rate += A[j][t - 1] / region_N[j] * beta_a[j] * m[i][j]
+                u_rate += U[j][t - 1] / region_N[j] * beta_u[j] * m[i][j]
+
+            S[i][t] = S[i][t - 1] - S[i][t - 1] * (e_rate + a_rate + u_rate)
+            E[i][t] = E[i][t - 1] + S[i][t - 1] * (e_rate + a_rate + u_rate) - alpha[i] * E[i][t - 1]
+            A[i][t] = A[i][t - 1] + p * alpha[i] * E[i][t - 1] - delta_a[i] * A[i][t - 1] - gamma_a[i] * A[i][t - 1]
+            Q[i][t] = Q[i][t - 1] + (1 - p) * q * alpha[i] * E[i][t - 1] \
+                      - delta_q[i] * Q[i][t - 1] - gamma_q[i] * Q[i][t - 1]
+            U[i][t] = U[i][t - 1] + (1 - p) * (1 - q) * alpha[i] * E[i][t - 1] \
+                      - delta_u[i] * U[i][t - 1] - gamma_u[i] * U[i][t - 1]
+            R[i][t] = R[i][t - 1] + gamma_a[i] * A[i][t - 1] \
+                      + gamma_q[i] * Q[i][t - 1] \
+                      + gamma_u[i] * U[i][t - 1]
+            D[i][t] = D[i][t - 1] + delta_a[i] * A[i][t - 1] \
+                      + delta_q[i] * Q[i][t - 1] \
+                      + delta_u[i] * U[i][t - 1]
+
+    I = A + Q + U
+    SSE = 0
+
+    for i in range(T):  # SSE计算方法：对各区域的各感染人数最小二乘（且乘以感染者比例系数去除人口影响）
+        for j in range(region_num):
+            SSE += ((I[j][i] - actual[j][i]) * actual_ratio_list[j][i]) ** 2
+            # SSE += (I[j][i] - actual[j][i]) ** 2
+
+    return SSE
 
 
 if __name__ == '__main__':
