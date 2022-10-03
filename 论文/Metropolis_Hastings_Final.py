@@ -154,6 +154,21 @@ class Metropolis_Hastings:  # Metropolis_Hastings采样算法
             p = random.uniform(0, 1)
             q = random.uniform(0, 1)
             c_0 = random.uniform(0.98, 1)
+            '---------------------'
+            # （2-2）产生新解，即：从均匀分布中随机抽取，并计算新的SSE（美国本土49区）
+            # beta_e = [random.uniform(0, 0.08) for i in range(self.region_num)]
+            # beta_a = [random.uniform(0, 0.08) for i in range(self.region_num)]
+            # beta_u = [random.uniform(0, 0.08) for i in range(self.region_num)]
+            # alpha = [1/5.1 for i in range(self.region_num)]
+            # delta_a = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            # delta_q = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            # delta_u = [random.uniform(0, 0.0005) for i in range(self.region_num)]
+            # gamma_a = [random.uniform(0, 0.05) for i in range(self.region_num)]
+            # gamma_q = [random.uniform(0, 0.05) for i in range(self.region_num)]
+            # gamma_u = [random.uniform(0, 0.05) for i in range(self.region_num)]
+            # p = random.uniform(0, 1)
+            # q = random.uniform(0, 1)
+            # c_0 = random.uniform(0.98, 1)
 
             SSE = self.algorithm(S, E, A, Q, U, R, D, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u,
                                  gamma_a, gamma_q, gamma_u, p, q, c_0)

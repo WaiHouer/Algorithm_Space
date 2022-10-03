@@ -13,7 +13,8 @@ class BOM:
         self.levels = []
 
         for i in range(7):
-            self.levels.append({'BOM层级':i, '采购数量':0, '外协':0, '重装厂自制':0, '厂内协同':0})
+            self.levels.append({'BOM层级':i, '采购数量':0, '外协':0, '重装厂自制':0, '厂内协同':0
+                                , '串行式协同':0, '穿插式协同':0})
 
         self.count()
         self.display()
@@ -39,6 +40,24 @@ class BOM:
 
                     levels = str(self.sheet.cell(raw, 2).value).count('-') + 1
                     self.levels[levels]['重装厂自制'] += int(float(self.sheet.cell(raw, 8).value))
+
+                    tem = ''.join(i for i in str(self.sheet.cell(raw, 17).value) if not i.isdigit())  # 去掉数字
+                    tem = tem.split('-')  # 分割步骤
+                    check = []
+                    for string in tem:
+                        # print(tem, string, check)
+                        if string in check:
+                            self.levels[levels]['穿插式协同'] += int(float(self.sheet.cell(raw, 8).value))
+                            break
+                        else:
+                            check.append(string)
+                    if len(tem) == len(check):
+                        self.levels[levels]['串行式协同'] += int(float(self.sheet.cell(raw, 8).value))
+
+                    if '外协' in str(self.sheet.cell(raw, 17).value):
+                        self.levels[levels]['外协'] += int(float(self.sheet.cell(raw, 8).value))
+                    elif ('大热' in str(self.sheet.cell(raw, 17).value)) or ('大热' in str(self.sheet.cell(raw, 17).value)):
+                        self.levels[levels]['厂内协同'] += int(float(self.sheet.cell(raw, 8).value))
 
                 else:
 
