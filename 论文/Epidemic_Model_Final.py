@@ -30,7 +30,7 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 140  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
+        self.end = 50  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
         self.t_num = self.end - self.start + 1  # 时间长度
 
         self.fitting_num = 14  # 拟合小周期
@@ -111,8 +111,27 @@ class Epidemic_Model:  # 完整传染病模型
         self.mean_absolute_percentage_error()  # 计算MAPE
         print(f'各区域直接预测MPAE：{self.MAPE_direct_pre_list}')
 
+        # print(f'直接预测群体数量：')  # 为了资源分配，所以显示出来，平时不用
+        # print(f'S:{self.S_pre_direct}')
+        # print(f'E:{self.E_pre_direct}')
+        # print(f'A:{self.A_pre_direct}')
+        # print(f'Q:{self.Q_pre_direct}')
+        # print(f'U:{self.U_pre_direct}')
+        # print(f'R:{self.R_pre_direct}')
+        # print(f'D:{self.D_pre_direct}')
+        print(f'拟合倒数第二个时期：（用于算U_new）')
+        print(f'S:{self.S[:, -2]}')
+        print(f'E:{self.E[:, -2]}')
+        print(f'A:{self.A[:, -2]}')
+        print(f'Q:{self.Q[:, -2]}')
+        print(f'U:{self.U[:, -2]}')
+        print(f'R:{self.R[:, -2]}')
+        print(f'D:{self.D[:, -2]}')
+
         self.pre_time_start = time.time()  # 对滚动预测时间计时
         self.final_para_fixed = self.final_para  # 固定最终参数（方便针对不同滚动情况，进行初始化）
+        print(f'最终参数：')
+        print(self.final_para_fixed)
         self.try_roll = [ 6]  # 对滚动天数为3，7各尝试一下
         for i in self.try_roll:
             print(f'滚动预测算法开始-滚动{i+1}天')
@@ -592,6 +611,15 @@ class Epidemic_Model:  # 完整传染病模型
             U_0[i] = self.U[i][-1]
             R_0[i] = self.R[i][-1]
             D_0[i] = self.D[i][-1]
+
+        print(f'拟合最后时期群体：')  # 为了资源分配显示出来，平时不用
+        print(f'S:{S_0}')
+        print(f'E:{E_0}')
+        print(f'A:{A_0}')
+        print(f'Q:{Q_0}')
+        print(f'U:{U_0}')
+        print(f'R:{R_0}')
+        print(f'D:{D_0}')
 
         fitting = SEAQURD(self.region_num, self.book, self.end, self.end + self.predict_num,
                           self.total_population, S_0, E_0, A_0, Q_0, U_0, R_0, D_0, self.final_para)
