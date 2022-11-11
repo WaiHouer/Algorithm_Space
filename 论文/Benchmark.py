@@ -9,7 +9,7 @@ import math
 def benchmark(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_initial, D_initial
               , N, sigma_hat, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u
               , gamma_a, gamma_q, gamma_u, p, q, eta, b_hat, C, tag
-              , b_last_tem, E_initial_last=None):
+              , b_last_tem, E_initial_last=None, re_tag=None):
     # 初始化决策向量、目标函数值
     b, c = np.zeros((K, T + 1)), np.zeros((K, T + 1))
     value = np.zeros(T + 1)
@@ -146,4 +146,7 @@ def benchmark(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_ini
             for k in range(K):  # 最后一期需要用到时间跨度外的数据
                 value[t] += E_out[k] - E[k][t] + alpha[k] * E[k][t]
 
-    return b, c, value
+    if re_tag:
+        return b, c, value, S, E, A, U
+    else:
+        return b, c, value

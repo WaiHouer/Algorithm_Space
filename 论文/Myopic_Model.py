@@ -8,7 +8,7 @@ from numba import njit
 
 
 def myopic_model(K, S, E, A, U, b_last, N, sigma_hat, beta_e, beta_a, beta_u
-                 , eta, b_hat, lambda_b, C, lambda_c):
+                 , eta, b_hat, lambda_b, C, lambda_c, B_add=0):
     model = gp.Model()  # 建立模型
 
     b = model.addVars(K, lb=0, vtype=gp.GRB.INTEGER)  # 规定变量（正整数）
@@ -23,11 +23,11 @@ def myopic_model(K, S, E, A, U, b_last, N, sigma_hat, beta_e, beta_a, beta_u
                        + gp.quicksum(c[j] * coefficient_c[j] for j in range(K))
                        , gp.GRB.MINIMIZE)  # 规定目标函数
 
-    B = sum(b_hat)  # 约束1（其实不算是约束）
+    B = sum(b_hat) + B_add  # 约束1（其实不算是约束）
     model.addConstr(b.sum('*') <= B)
     model.addConstrs(b[k] >= b_last[k] for k in range(K))
     model.addConstrs(b[k] - b_last[k] <= lambda_b * b_hat[-1] for k in range(K))
-    model.addConstrs(b[k] <= U[k] for k in range(K))
+    model.addConstrs(eta * b[k] <= U[k] + A[k] / N[k] * c[k] for k in range(K))
     model.addConstr(c.sum('*') <= C)
     model.addConstrs(c[k] <= N[k] for k in range(K))
     model.addConstrs(c[k] <= lambda_c * C for k in range(K))

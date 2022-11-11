@@ -9,7 +9,8 @@ from Allocation_Epidemic_Function import allocation_epidemic_function
 def myopic_lp(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_initial, D_initial, N
               , sigma_hat, beta_e, beta_a, beta_u, alpha, delta_a, delta_q, delta_u
               , gamma_a, gamma_q, gamma_u, p, q
-              , eta, b_hat, lambda_b, C, lambda_c):
+              , eta, b_hat, lambda_b, C, lambda_c
+              , re_tag=None):
     # 初始化决策向量、目标函数值
     b, c = np.zeros((K, T + 1)), np.zeros((K, T + 1))
     value = np.zeros(T + 1)
@@ -67,4 +68,7 @@ def myopic_lp(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_ini
     #         tem += E[k][t+1] - E[k][t] + alpha[k] * E[k][t]
     #     print(tem, value[t])
 
-    return b, c, value
+    if re_tag:
+        return b, c, value, S, E, A, U
+    else:
+        return b, c, value

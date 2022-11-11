@@ -9,7 +9,8 @@ from numba import njit
 
 def adp_model(K, S, E, A, U, b_last, N, sigma_hat, beta_e, beta_a, beta_u, eta, b_hat, lambda_b, C, lambda_c
               , W, theta_1, phi_1, theta_2, phi_2
-              , alpha, delta_a, delta_u, gamma_a, gamma_u, p, q):
+              , alpha, delta_a, delta_u, gamma_a, gamma_u, p, q
+              , norm_up, norm_down, re_tag=None, B_add=0):
     model = gp.Model()  # 建立模型
 
     b = model.addVars(K, lb=0, vtype=gp.GRB.INTEGER)  # 规定变量
@@ -29,11 +30,11 @@ def adp_model(K, S, E, A, U, b_last, N, sigma_hat, beta_e, beta_a, beta_u, eta, 
                        + phi_2
                        , gp.GRB.MINIMIZE)  # 规定目标函数
 
-    B = sum(b_hat)  # 约束1（其实不算是约束）
+    B = sum(b_hat) + B_add  # 约束1（其实不算是约束）
     model.addConstr(b.sum('*') <= B)
     model.addConstrs(b[k] >= b_last[k] for k in range(K))
     model.addConstrs(b[k] - b_last[k] <= lambda_b * b_hat[-1] for k in range(K))
-    model.addConstrs(b[k] <= U[k] for k in range(K))
+    model.addConstrs(eta * b[k] <= U[k] + A[k] / N[k] * c[k] for k in range(K))
     model.addConstr(c.sum('*') <= C)
     model.addConstrs(c[k] <= N[k] for k in range(K))
     model.addConstrs(c[k] <= lambda_c * C for k in range(K))
@@ -59,21 +60,29 @@ def adp_model(K, S, E, A, U, b_last, N, sigma_hat, beta_e, beta_a, beta_u, eta, 
     for o in range(4 * K, 5 * K):
         model.addConstr(h_nxt[o] == b[o - 4 * K])
 
-    model.addConstrs(act[w] >= gp.quicksum(h_nxt[o] * theta_1[o][w] for o in range(5 * K)) + phi_1[w] for w in range(W))
+    model.addConstrs(act[w] >= gp.quicksum((h_nxt[o] - norm_up[o]) / norm_down[o] * theta_1[o][w]
+                                           for o in range(5 * K)) + phi_1[w] for w in range(W))
     model.addConstrs(act[w] >= 0 for w in range(W))
-    model.addConstrs(act[w] <= gp.quicksum(h_nxt[o] * theta_1[o][w] for o in range(5 * K)) + phi_1[w]
-                     + miu[w] * 999999999999 for w in range(W))
-    model.addConstrs(act[w] <= 0 + (1 - miu[w]) * 999999999999 for w in range(W))
+    model.addConstrs(act[w] <= gp.quicksum((h_nxt[o] - norm_up[o]) / norm_down[o] * theta_1[o][w]
+                                           for o in range(5 * K)) + phi_1[w]
+                     + miu[w] * 9999999999999 for w in range(W))
+    model.addConstrs(act[w] <= 0 + (1 - miu[w]) * 9999999999999 for w in range(W))
 
-    model.addConstr(gp.quicksum(b[k] for k in range(K)) == B)  # 我自己后加的，用于确保病床没有浪费
+    # model.addConstr(gp.quicksum(b[k] for k in range(K)) == B)  # 我自己后加的，用于确保病床没有浪费
 
     model.Params.LogToConsole = False  # 显示求解过程
     model.optimize()
 
     # print("最优目标函数值：", model.objVal)
     # print('求解结果：', model.getVars())
-    # for cons in model.getConstrs():
-    #     print(cons.RHS)
+    if model.status != gp.GRB.OPTIMAL:  # 检查出错的约束
+        print('出错了')
+        model.computeIIS()
+        model.write('model.ilp')
+
+    if model.getVars()[0] is None:
+        for cons in model.getConstrs():
+            print(cons.RHS)
     # print('目标函数表达式：', model.getObjective())
     b_result, c_result = np.zeros(K), np.zeros(K)
     for i in range(K):
@@ -83,7 +92,10 @@ def adp_model(K, S, E, A, U, b_last, N, sigma_hat, beta_e, beta_a, beta_u, eta, 
     value_ADP = value_calculate(K, constant_e, constant_a, constant_u, coefficient_b, coefficient_c
                                 , b_result, c_result)
 
-    return b_result, c_result, value_ADP
+    if re_tag:
+        return b_result, c_result, model.objVal
+    else:
+        return b_result, c_result, value_ADP
 
 
 @njit()
