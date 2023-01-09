@@ -7,10 +7,12 @@ from openpyxl import load_workbook
 import numpy as np
 from numba import njit
 from Allocation_Epidemic_Function import allocation_epidemic_function
+from Nature_Process import nature_process
 from Myopic_LP import myopic_lp
 from Myopic_Model import myopic_model
 from Benchmark import benchmark
 from ADP import adp
+from GAQN import GAQN_Method
 
 
 np.set_printoptions(suppress=True)
@@ -97,7 +99,7 @@ class Resource_Allocation:
             self.C[i] = 500000
         self.lambda_c = 0.2  # 新增核酸检测部署率（防止只发放给某一个区域）
         self.M = 150  # ADP算法，迭代修正次数
-        self.L = 20  # ADP算法，单次修正，样本量
+        self.L = 30  # ADP算法，单次修正，样本量
         self.O = 5 * self.K  # 状态变量（特征值）数量（没有参与任何计算，仅供展示）
         self.W = 30  # 神经元个数
         self.delta = 99999999  # 足够大的正数（没有参与任何计算，仅供展示）
@@ -113,18 +115,19 @@ class Resource_Allocation:
         value_nature = 0  # 自然状态下的总新增
         if tag:
             s_time = time.time()
-            b, c = np.zeros((self.K, self.T + 1 + 1)), np.zeros((self.K, self.T + 1 + 1))  # 为了算出value值，额外多迭代一期
-            S, E, A, Q, U, R, D = allocation_epidemic_function(self.K, self.T + 1, self.S_initial, self.E_initial
-                                                               , self.A_initial, self.Q_initial, self.U_initial
-                                                               , self.R_initial, self.D_initial, self.N, self.sigma_hat
-                                                               , self.beta_e, self.beta_a, self.beta_u, self.alpha
-                                                               , self.delta_a, self.delta_q, self.delta_u
-                                                               , self.gamma_a, self.gamma_q, self.gamma_u
-                                                               , self.p, self.q, b, c, self.eta)
+            S, E, A, Q, U, R, D = \
+                nature_process(self.K, self.T + 1, self.S_initial, self.E_initial, self.A_initial, self.Q_initial
+                               , self.U_initial, self.R_initial, self.D_initial, self.N, self.sigma_hat, self.beta_e
+                               , self.beta_a, self.beta_u, self.alpha, self.delta_a, self.delta_q, self.delta_u
+                               , self.gamma_a, self.gamma_q, self.gamma_u, self.p, self.q, self.eta)
             e_time = time.time()
+            value_nature_list = np.zeros(self.T + 1)
+            value_nature_list_region = np.zeros((self.K, self.T + 1))
             for t in range(self.T + 1):
                 for k in range(self.K):
+                    value_nature_list[t] += E[k][t + 1] - E[k][t] + self.alpha[k] * E[k][t]
                     value_nature += E[k][t + 1] - E[k][t] + self.alpha[k] * E[k][t]
+                    value_nature_list_region[k][t] = E[k][t + 1] - E[k][t] + self.alpha[k] * E[k][t]
             print(value_nature)
             print(f'自然状态迭代时间：{e_time - s_time}s')
 
@@ -230,7 +233,7 @@ class Resource_Allocation:
             print(f'ADP算法运行时间：{e_time - s_time}s')
             print(b_ADP, c_ADP)
 
-        if tag == 'all':
+        if tag == 'allaa':
             s_time = time.time()
             b_ADP_Short, c_ADP_Short = np.zeros((self.K, self.T + 1)), np.zeros((self.K, self.T + 1))
             value_ADP_Short = np.zeros(self.T + 1)
@@ -341,6 +344,18 @@ class Resource_Allocation:
                                         f'，百分比：{(value_nature - sum(value_ADP_Short)) / value_nature}')
             print(f'短视ADP算法运行时间：{e_time - s_time}s')
             print(b_ADP_Short, c_ADP_Short)
+
+        if tag == 'GAQN' or tag == 'all':
+            s_time = time.time()
+            GAQN_Method(self.K, self.T, self.S_initial, self.E_initial, self.A_initial, self.Q_initial, self.U_initial
+                        , self.R_initial, self.D_initial, self.N, self.sigma_hat, self.beta_e, self.beta_a
+                        , self.beta_u, self.alpha, self.delta_a, self.delta_q, self.delta_u, self.gamma_a
+                        , self.gamma_q, self.gamma_u, self.p, self.q, self.eta, self.b_hat, self.lambda_b
+                        , self.C, self.lambda_c, b_myopic, c_myopic, b_BH_Aver, c_BH_Aver, b_BH_N, c_BH_N
+                        , b_BH_U, c_BH_U, b_BH_U_n, c_BH_U_n
+                        , value_nature_list, value_nature_list_region)
+            e_time = time.time()
+            print(f'GA算法运行时间：{e_time - s_time}s')
 
 
 @njit()
