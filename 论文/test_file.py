@@ -1,6 +1,5 @@
+import random
 import numpy as np
-
-a = [0, 1, 2, 3, 4]
-
-for i in range(len(a) - 1, -1, -1):
-    print(a[i])
+c = np.array([3,5,2,6,7])
+c.sort()
+print(c)

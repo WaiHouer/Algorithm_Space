@@ -30,7 +30,7 @@ class Epidemic_Model:  # 完整传染病模型
 
         # 记录完整的拟合区间（如：4月13日起，前self.end - self.start + 1天）
         self.start = 0  # 开始时间点
-        self.end = 50  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
+        self.end = 140  # 结束时间点（20.4.12-21.1.15，此处为278，文件起点88）（20.4.12-21.9.1，此处为142，文件起点88）
         self.t_num = self.end - self.start + 1  # 时间长度
 
         self.fitting_num = 14  # 拟合小周期
@@ -127,6 +127,14 @@ class Epidemic_Model:  # 完整传染病模型
         print(f'U:{self.U[:, -2]}')
         print(f'R:{self.R[:, -2]}')
         print(f'D:{self.D[:, -2]}')
+        print(f'拟合最后一个时期：')
+        print(f'S:{self.S[:, -1]}')
+        print(f'E:{self.E[:, -1]}')
+        print(f'A:{self.A[:, -1]}')
+        print(f'Q:{self.Q[:, -1]}')
+        print(f'U:{self.U[:, -1]}')
+        print(f'R:{self.R[:, -1]}')
+        print(f'D:{self.D[:, -1]}')
 
         self.pre_time_start = time.time()  # 对滚动预测时间计时
         self.final_para_fixed = self.final_para  # 固定最终参数（方便针对不同滚动情况，进行初始化）

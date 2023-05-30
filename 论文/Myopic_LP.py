@@ -13,6 +13,7 @@ def myopic_lp(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_ini
               , re_tag=None):
     # 初始化决策向量、目标函数值
     b, c = np.zeros((K, T + 1)), np.zeros((K, T + 1))
+    b_bar = np.zeros((K, T + 1))
     value = np.zeros(T + 1)
     # T+1的目的：把起点放进来
     S, E, A, Q, U, R, D = np.zeros((K, T + 1)), np.zeros((K, T + 1)), np.zeros((K, T + 1)), np.zeros((K, T + 1)) \
@@ -39,9 +40,10 @@ def myopic_lp(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_ini
         if t == 0:
             b_last = np.zeros(K)  # 上期病床
         else:
-            b_last = b[:, t - 1]
+            b_last = b_bar[:, t - 1]
 
-        b[:, t], c[:, t], value[t] = myopic_model(K, S_tem, E_tem, A_tem, U_tem, b_last, N, sigma_hat, beta_e, beta_a, beta_u
+        b[:, t], c[:, t], value[t], b_bar[:, t] \
+            = myopic_model(K, S_tem, E_tem, A_tem, U_tem, b_last, N, sigma_hat, beta_e, beta_a, beta_u
                                                   , eta, b_hat[0: t + 1], lambda_b, C[t], lambda_c)
 
         # 注意：这里必须用b[:, t:t+1]，而不用b[:, t]，两者虽然在所包含元素上没有任何区别，但是👇
@@ -69,6 +71,6 @@ def myopic_lp(K, T, S_initial, E_initial, A_initial, Q_initial, U_initial, R_ini
     #     print(tem, value[t])
 
     if re_tag:
-        return b, c, value, S, E, A, U
+        return b, c, value, S, E, A, U, b_bar
     else:
-        return b, c, value
+        return b, c, value, b_bar

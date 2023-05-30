@@ -1,5 +1,5 @@
 """
-Python的非线性规划求解
+遗传算法
 """
 import random
 import time
@@ -9,9 +9,10 @@ from numba import njit
 import math
 from sympy import symbols, diff
 from sympy.parsing.sympy_parser import parse_expr
-from QN import QN
 from Allocation_Epidemic_Function import allocation_epidemic_function
 from duplicate_removal import duplicate_removal
+from GA_Basic_Function import coding, decoding, fitness_calculate
+from VNS import Variable_Neighborhood_Search
 
 
 random.seed(2333)
@@ -43,7 +44,7 @@ class GAQN_Method:
 
         self.GA_T = 30  # 每GA_T期进行一次遗传算法（遗传周期）
         self.max_iter = 10000  # 最大迭代次数
-        self.population = 160  # 种群数量
+        self.population = 200  # 种群数量
         self.value_nature_list = value_nature_list  # 用于存放自然状态的value，用于减去，计算适应度
         self.value_nature_list_region = value_nature_list_region  # 用于存放自然状态的value（更细，每个区域），用于精确变异
         self.SBX_eta = 0.3  # SBX交叉策略中的eta值，值越大，子代越接近父代
@@ -70,15 +71,16 @@ class GAQN_Method:
         c_5_all = self.c_BH_U_n
         b_5_all = coding(self.b_BH_U_n)
 
-        n_1, n_2, n_3, n_4 = 4, 10, 12, 60  # 初始解个数（per）、额外myopic个数、邻域解个数（per）、随机解个数
+        n_1, n_2, n_3, n_4 = 4, 10, 17, 85  # 初始解个数（per）、额外myopic个数、邻域解个数（per）、随机解个数
         # n_father_1, n_father_2 = 5, 25  # 父代种群精英保留个数（不重复）、父代种群轮盘赌保留数量
         # n_cross_1, n_cross_2 = 10, 50  # 交叉种群精英保留个数（不重复）、交叉种群轮盘赌保留数量
         # n_mutation_1, n_mutation_2 = 10, 50  # 变异种群精英保留个数（不重复）、变异种群轮盘赌保留数量
 
-        n_father_1, n_father_2 = 5, 20  # 父代种群精英保留个数（不重复）、父代种群轮盘赌保留数量
-        n_cross_1, n_cross_2 = 5, 40  # 交叉种群精英保留个数（不重复）、交叉种群轮盘赌保留数量
-        n_mutation_1, n_mutation_2 = 5, 40  # 变异种群精英保留个数（不重复）、变异种群轮盘赌保留数量
-        n_mutation_3, n_mutation_4 = 5, 40  # 精确变异（边际效应）种群精英保留个数（不重复）、变异种群轮盘赌保留数量
+        n_father_1, n_father_2 = 10, 30  # 父代种群精英保留个数（不重复）、父代种群轮盘赌保留数量
+        n_cross_1, n_cross_2 = 15, 60  # 交叉种群精英保留个数（不重复）、交叉种群轮盘赌保留数量
+        n_mutation_1, n_mutation_2 = 15, 60  # 变异种群精英保留个数（不重复）、变异种群轮盘赌保留数量
+        # n_mutation_3, n_mutation_4 = 5, 20  # 精确变异（边际效应）种群精英保留个数（不重复）、变异种群轮盘赌保留数量（* 3种情况）
+        n_VNS = 10
 
         # 每轮更新的参数
         T_tem = 0
@@ -114,7 +116,18 @@ class GAQN_Method:
             '-------------------'
             # b_init[:, :], c_init[:, :] = b_2[:, :], c_2[:, :]  # 去掉myopic解，用于测试
             '-------------------'
+            # aaaa = \
+            #     Variable_Neighborhood_Search(self.K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, self.N
+            #                                  , self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha
+            #                                  , self.delta_a, self.delta_q, self.delta_u, self.gamma_a, self.gamma_q
+            #                                  , self.gamma_u, self.p, self.q, self.eta, value_nature_list_region, b_init
+            #                                  , c_init, B_last, b_hat, C, self.lambda_b, self.lambda_c)
+            # print(aaaa.fitness_final)
+            # print(aaaa.b_final)
+            # print(aaaa.c_final)
+            '-------------------'
 
+            '-----------------------------------------------------------------------'
             # 初始化种群
             population_all = [{'b': np.zeros((self.K, len(b_init[0, :]))), 'c': np.zeros((self.K, len(c_init[0, :]))),
                                'fitness': 0}
@@ -189,7 +202,7 @@ class GAQN_Method:
                             population_all[po]['c'][k][t] = dif
                         else:
                             break
-
+            '-----------------------------------------------------------------------'
             best_po = {'b': np.zeros((self.K, len(b_init[0, :]))), 'c': np.zeros((self.K, len(c_init[0, :]))),
                        'fitness': 0}  # 存储最好的个体
             for i in range(self.max_iter):
@@ -222,7 +235,7 @@ class GAQN_Method:
                 if i == 1000 or i == 2000 or i == 3000 or i == self.max_iter - 1:
                     print('当前最优解-b：', best_po['b'])
                     print('当前最优解-c：', best_po['c'])
-
+                '-----------------------------------------------------------------------'
                 # 选择策略——选择个体进行接下来的交叉变异操作
                 select_time = time.time()
                 fitness_list = np.zeros(self.population)  # 创建一个适应度表，输入轮盘赌函数选择父代
@@ -230,19 +243,19 @@ class GAQN_Method:
                     fitness_list[po] = population_all[po]['fitness']
                 parents = selection_roulette(fitness_list, self.population)  # 轮盘赌选择策略
                 print(f'--选择完毕，费时：{time.time() - select_time}s')
-
+                '-----------------------------------------------------------------------'
                 # 交叉策略——生成新个体
                 cross_time = time.time()
                 population_new_1 = cross_SBX(self.K, len(b_init[0, :]), list(parents), population_all, self.SBX_eta
                                              , self.cross_t_p)
                 print(f'--交叉完毕，费时：{time.time() - cross_time}s')
-
+                '-----------------------------------------------------------------------'
                 # 变异策略——新个体有小概率变异
                 mutation_time = time.time()
                 population_new_2 = mutation_polynomial(self.K, len(b_init[0, :]), population_new_1, self.mutation_eta
                                                        , self.mutation_p)
                 print(f'--变异完毕，费时：{time.time() - mutation_time}s')
-
+                '-----------------------------------------------------------------------'
                 # 修复策略——对于不满足约束的个体进行修复（一次修复一个，输入：单个基因）
                 repair_time = time.time()
                 for po in range(len(population_new_1)):  # 修复交叉新种群
@@ -258,7 +271,7 @@ class GAQN_Method:
                     population_new_2[po]['b'][:, :] = b_new[:, :]
                     population_new_2[po]['c'][:, :] = c_new[:, :]
                 print(f'--修复完毕，费时：{time.time() - repair_time}s')
-
+                '-----------------------------------------------------------------------'
                 # 取整策略——四舍五入 + 随机找点补差（修复算法会把差值缩小到个位数，所以随机找一个补就行）
                 round_time = time.time()
                 for po in range(len(population_new_1)):  # 四舍五入（交叉）
@@ -303,7 +316,7 @@ class GAQN_Method:
                                     population_new_2[po]['c'][k][t] -= dif
                                     break
                 print(f'--取整完毕，费时：{time.time() - round_time}s')
-
+                '-----------------------------------------------------------------------'
                 # 计算交叉和变异产生的个体的适应度
                 for po in range(len(population_new_1)):
                     b_tem, c_tem = np.zeros((self.K, len(b_init[0, :]))), np.zeros((self.K, len(b_init[0, :])))
@@ -328,33 +341,73 @@ class GAQN_Method:
                                           , self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha
                                           , self.delta_a, self.delta_q, self.delta_u, self.gamma_a, self.gamma_q
                                           , self.gamma_u, self.p, self.q, b_tem, c_tem, self.eta, value_nature)
-
-                # 精确变异策略——净增长边际效应
-                mutation_time_2 = time.time()
-                population_new_3 = [{'b': np.zeros((self.K, len(b_init[0, :])))
-                                     , 'c': np.zeros((self.K, len(c_init[0, :])))
-                                     , 'fitness': 0} for i in range(len(population_new_1))]
-                for po in range(len(population_new_1)):  # 每次针对一个个体
-                    r = random.random()
-                    if r > self.mutation_p:  # 不满足变异概率
-                        population_new_3[po]['b'][:, :] = population_new_1[po]['b'][:, :]
-                        population_new_3[po]['c'][:, :] = population_new_1[po]['c'][:, :]
-                        population_new_3[po]['fitness'] = population_new_1[po]['fitness']
-                        continue
-                    po_tem = \
-                        mutation_fit(self.K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, self.N
-                                     , self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha, self.delta_a
-                                     , self.delta_q, self.delta_u, self.gamma_a, self.gamma_q, self.gamma_u, self.p
-                                     , self.q, self.eta, value_nature_list_region, population_new_1[po], B_last
-                                     , b_hat, C, self.lambda_b, self.lambda_c)
-                    population_new_3[po]['b'][:, :] = po_tem['b'][:, :]
-                    population_new_3[po]['c'][:, :] = po_tem['c'][:, :]
-                    population_new_3[po]['fitness'] = po_tem['fitness']
-                print(f'--精确变异（边际增长）完毕，费时：{time.time() - mutation_time_2}s')
-                print(f'交叉产生新种群：{len(population_new_1)}'
-                      f', 变异产生新种群：{len(population_new_2)}'
-                      f', 精确变异（边际增长）产生新种群：{len(population_new_3)}')
-
+                '-----------------------------------------------------------------------'
+                # 精确变异策略——净增长边际效应，并行三组！！！！！！
+                # mutation_time_2 = time.time()
+                # population_new_3_1 = [{'b': np.zeros((self.K, len(b_init[0, :])))
+                #                       , 'c': np.zeros((self.K, len(c_init[0, :])))
+                #                       , 'fitness': 0} for i in range(len(population_new_1))]
+                # for po in range(len(population_new_1)):  # 每次针对一个个体
+                #     r = random.random()
+                #     if r > self.mutation_p:  # 不满足变异概率
+                #         population_new_3_1[po]['b'][:, :] = population_new_1[po]['b'][:, :]
+                #         population_new_3_1[po]['c'][:, :] = population_new_1[po]['c'][:, :]
+                #         population_new_3_1[po]['fitness'] = population_new_1[po]['fitness']
+                #         continue
+                #     po_tem = \
+                #         mutation_fit(self.K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, self.N
+                #                      , self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha, self.delta_a
+                #                      , self.delta_q, self.delta_u, self.gamma_a, self.gamma_q, self.gamma_u, self.p
+                #                      , self.q, self.eta, value_nature_list_region, population_new_1[po], B_last
+                #                      , b_hat, C, self.lambda_b, self.lambda_c, b_or_c=1)
+                #     population_new_3_1[po]['b'][:, :] = po_tem['b'][:, :]
+                #     population_new_3_1[po]['c'][:, :] = po_tem['c'][:, :]
+                #     population_new_3_1[po]['fitness'] = po_tem['fitness']
+                #
+                # population_new_3_2 = [{'b': np.zeros((self.K, len(b_init[0, :])))
+                #                       , 'c': np.zeros((self.K, len(c_init[0, :])))
+                #                       , 'fitness': 0} for i in range(len(population_new_1))]
+                # for po in range(len(population_new_1)):  # 每次针对一个个体
+                #     r = random.random()
+                #     if r > self.mutation_p:  # 不满足变异概率
+                #         population_new_3_2[po]['b'][:, :] = population_new_1[po]['b'][:, :]
+                #         population_new_3_2[po]['c'][:, :] = population_new_1[po]['c'][:, :]
+                #         population_new_3_2[po]['fitness'] = population_new_1[po]['fitness']
+                #         continue
+                #     po_tem = \
+                #         mutation_fit(self.K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, self.N
+                #                      , self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha, self.delta_a
+                #                      , self.delta_q, self.delta_u, self.gamma_a, self.gamma_q, self.gamma_u, self.p
+                #                      , self.q, self.eta, value_nature_list_region, population_new_1[po], B_last
+                #                      , b_hat, C, self.lambda_b, self.lambda_c, b_or_c=2)
+                #     population_new_3_2[po]['b'][:, :] = po_tem['b'][:, :]
+                #     population_new_3_2[po]['c'][:, :] = po_tem['c'][:, :]
+                #     population_new_3_2[po]['fitness'] = po_tem['fitness']
+                #
+                # population_new_3_3 = [{'b': np.zeros((self.K, len(b_init[0, :])))
+                #                       , 'c': np.zeros((self.K, len(c_init[0, :])))
+                #                       , 'fitness': 0} for i in range(len(population_new_1))]
+                # for po in range(len(population_new_1)):  # 每次针对一个个体
+                #     r = random.random()
+                #     if r > self.mutation_p:  # 不满足变异概率
+                #         population_new_3_3[po]['b'][:, :] = population_new_1[po]['b'][:, :]
+                #         population_new_3_3[po]['c'][:, :] = population_new_1[po]['c'][:, :]
+                #         population_new_3_3[po]['fitness'] = population_new_1[po]['fitness']
+                #         continue
+                #     po_tem = \
+                #         mutation_fit(self.K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, self.N
+                #                      , self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha, self.delta_a
+                #                      , self.delta_q, self.delta_u, self.gamma_a, self.gamma_q, self.gamma_u, self.p
+                #                      , self.q, self.eta, value_nature_list_region, population_new_1[po], B_last
+                #                      , b_hat, C, self.lambda_b, self.lambda_c, b_or_c=3)
+                #     population_new_3_3[po]['b'][:, :] = po_tem['b'][:, :]
+                #     population_new_3_3[po]['c'][:, :] = po_tem['c'][:, :]
+                #     population_new_3_3[po]['fitness'] = po_tem['fitness']
+                # print(f'--精确变异（边际增长）完毕，费时：{time.time() - mutation_time_2}s')
+                # print(f'交叉产生新种群：{len(population_new_1)}'
+                #       f', 变异产生新种群：{len(population_new_2)}'
+                #       f', 精确变异（边际增长）产生新种群：{len(population_new_3_1)}（共3组）')
+                '-----------------------------------------------------------------------'
                 # 选择策略——从新个体中，选择相同数量作为新一代种群
                 select_time_2 = time.time()
                 population_all_new = []
@@ -377,11 +430,21 @@ class GAQN_Method:
                     tem = duplicate_.pop()
                     population_all_new.append(tem)
 
-                sort_ = sorted(population_new_3, key=lambda x: x['fitness'])  # 列表-字典，按键值排序（从小到大）
-                duplicate_ = duplicate_removal(sort_, ['fitness'], model='key')  # 列表-字典，按键值去重
-                for j in range(n_mutation_3):  # 精确变异（边际增长）精英保留不重复的 n_mutation_3 个
-                    tem = duplicate_.pop()
-                    population_all_new.append(tem)
+                # sort_ = sorted(population_new_3_1, key=lambda x: x['fitness'])  # 并行三组！！！！！
+                # duplicate_ = duplicate_removal(sort_, ['fitness'], model='key')  # 列表-字典，按键值去重
+                # for j in range(n_mutation_3):  # 精确变异（边际增长）精英保留不重复的 n_mutation_3 个
+                #     tem = duplicate_.pop()
+                #     population_all_new.append(tem)
+                # sort_ = sorted(population_new_3_2, key=lambda x: x['fitness'])  # 列表-字典，按键值排序（从小到大）
+                # duplicate_ = duplicate_removal(sort_, ['fitness'], model='key')  # 列表-字典，按键值去重
+                # for j in range(n_mutation_3):  # 精确变异（边际增长）精英保留不重复的 n_mutation_3 个
+                #     tem = duplicate_.pop()
+                #     population_all_new.append(tem)
+                # sort_ = sorted(population_new_3_3, key=lambda x: x['fitness'])  # 列表-字典，按键值排序（从小到大）
+                # duplicate_ = duplicate_removal(sort_, ['fitness'], model='key')  # 列表-字典，按键值去重
+                # for j in range(n_mutation_3):  # 精确变异（边际增长）精英保留不重复的 n_mutation_3 个
+                #     tem = duplicate_.pop()
+                #     population_all_new.append(tem)
 
                 fitness_list = np.zeros(self.population)
                 for po in range(len(fitness_list)):  # 父代轮盘赌 n_father_2 个
@@ -419,20 +482,63 @@ class GAQN_Method:
                     tem['fitness'] = population_new_2[int(po)]['fitness']
                     population_all_new.append(tem)
 
-                fitness_list = np.zeros(int(self.population * 2))
-                for po in range(len(fitness_list)):  # 精确变异（边际增长）轮盘赌 n_mutation_4 个
-                    fitness_list[po] = population_new_3[po]['fitness']
-                select = selection_roulette(fitness_list, n_mutation_4, tag=1)
-                for po in select:
-                    tem = {'b': np.zeros((self.K, len(b_init[0, :]))), 'c': np.zeros((self.K, len(c_init[0, :]))),
-                           'fitness': 0}
-                    tem['b'][:, :] = population_new_3[int(po)]['b'][:, :]
-                    tem['c'][:, :] = population_new_3[int(po)]['c'][:, :]
-                    tem['fitness'] = population_new_3[int(po)]['fitness']
-                    population_all_new.append(tem)
+                # fitness_list = np.zeros(int(self.population * 2))  # 并行三组！！！！！！
+                # for po in range(len(fitness_list)):  # 精确变异（边际增长）轮盘赌 n_mutation_4 个
+                #     fitness_list[po] = population_new_3_1[po]['fitness']
+                # select = selection_roulette(fitness_list, n_mutation_4, tag=1)
+                # for po in select:
+                #     tem = {'b': np.zeros((self.K, len(b_init[0, :]))), 'c': np.zeros((self.K, len(c_init[0, :]))),
+                #            'fitness': 0}
+                #     tem['b'][:, :] = population_new_3_1[int(po)]['b'][:, :]
+                #     tem['c'][:, :] = population_new_3_1[int(po)]['c'][:, :]
+                #     tem['fitness'] = population_new_3_1[int(po)]['fitness']
+                #     population_all_new.append(tem)
+                # fitness_list = np.zeros(int(self.population * 2))
+                # for po in range(len(fitness_list)):  # 精确变异（边际增长）轮盘赌 n_mutation_4 个
+                #     fitness_list[po] = population_new_3_2[po]['fitness']
+                # select = selection_roulette(fitness_list, n_mutation_4, tag=1)
+                # for po in select:
+                #     tem = {'b': np.zeros((self.K, len(b_init[0, :]))), 'c': np.zeros((self.K, len(c_init[0, :]))),
+                #            'fitness': 0}
+                #     tem['b'][:, :] = population_new_3_2[int(po)]['b'][:, :]
+                #     tem['c'][:, :] = population_new_3_2[int(po)]['c'][:, :]
+                #     tem['fitness'] = population_new_3_2[int(po)]['fitness']
+                #     population_all_new.append(tem)
+                # fitness_list = np.zeros(int(self.population * 2))
+                # for po in range(len(fitness_list)):  # 精确变异（边际增长）轮盘赌 n_mutation_4 个
+                #     fitness_list[po] = population_new_3_3[po]['fitness']
+                # select = selection_roulette(fitness_list, n_mutation_4, tag=1)
+                # for po in select:
+                #     tem = {'b': np.zeros((self.K, len(b_init[0, :]))), 'c': np.zeros((self.K, len(c_init[0, :]))),
+                #            'fitness': 0}
+                #     tem['b'][:, :] = population_new_3_3[int(po)]['b'][:, :]
+                #     tem['c'][:, :] = population_new_3_3[int(po)]['c'][:, :]
+                #     tem['fitness'] = population_new_3_3[int(po)]['fitness']
+                #     population_all_new.append(tem)
 
                 print(f'--最终选择完毕，费时：{time.time() - select_time_2}s')
+                '-----------------------------------------------------------------------'
+                # VNS算法搜索
+                VNS_time = time.time()
+                sort_ = sorted(population_all_new, key=lambda x: x['fitness'])  # 列表-字典，按键值排序（从小到大）
+                duplicate_ = duplicate_removal(sort_, ['fitness'], model='key')  # 列表-字典，按键值去重
+                for j in range(n_VNS):  # VNS搜索，不重复的 n_VNS 个
+                    tem = duplicate_.pop()
+                    local_sol = \
+                        Variable_Neighborhood_Search(self.K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init
+                                                     , self.N, self.sigma_hat, self.beta_e, self.beta_a, self.beta_u
+                                                     , self.alpha, self.delta_a, self.delta_q, self.delta_u
+                                                     , self.gamma_a, self.gamma_q, self.gamma_u, self.p, self.q
+                                                     , self.eta, value_nature_list_region, tem['b'], tem['c'], B_last
+                                                     , b_hat, C, self.lambda_b, self.lambda_c)
+                    b_, c_, fitness_ = np.zeros_like(local_sol.b_final), np.zeros_like(local_sol.c_final), 0
+                    b_[:, :], c_[:, :] = local_sol.b_final[:, :], local_sol.c_final[:, :]
+                    fitness_ = local_sol.fitness_final
+                    population_all_new.append({'b': b_, 'c': c_, 'fitness': fitness_})
+                    print(f'--VNS完成第{j + 1}个解')
 
+                print(f'--VNS搜索完毕，费时：{time.time() - VNS_time}s')
+                '-----------------------------------------------------------------------'
                 # 更新下一代
                 for po in range(self.population):
                     population_all[po]['b'][:, :] = population_all_new[po]['b'][:, :]
@@ -444,113 +550,6 @@ class GAQN_Method:
 
             T_tem += self.GA_T
             break
-
-    def algorithm_1(self):
-        T_tem = 0
-        S, E, A, Q = self.S_initial, self.E_initial, self.A_initial, self.Q_initial  # 每两期更新一次
-        U, R, D = self.U_initial, self.R_initial, self.D_initial
-        b_last = np.zeros(self.K)
-        while T_tem <= 3:
-            if T_tem + 1 <= 3:
-                print(f'开始第{T_tem}期至第{T_tem + 1}期')
-                b_init = self.b_myopic[:, T_tem:T_tem + 2]  # 取出这两期的初始解
-                c_init = self.c_myopic[:, T_tem:T_tem + 2]
-                B = [sum(self.b_hat[0:T_tem + 1]), sum(self.b_hat[0:T_tem + 2])]  # 这两期的病床总和上限
-                s_time = time.time()
-                QN(self.K, S, E, A, U, self.N, self.sigma_hat, self.beta_e, self.beta_a, self.beta_u, self.alpha
-                   , self.delta_a, self.delta_q, self.delta_u, self.gamma_a, self.gamma_q, self.gamma_u
-                   , self.p, self.q, self.eta, self.b_hat[T_tem: T_tem + 2], self.lambda_b
-                   , self.C[T_tem: T_tem + 2], self.lambda_c, b_init, c_init, B, b_last)
-                print(f'拟牛顿{time.time() - s_time}s')
-
-
-
-            else:
-                print(f'剩余第{T_tem}期，直接采用myopic')
-
-
-
-            T_tem += 2
-
-
-@ njit()
-def coding(b):  # 编码
-    K, T = len(b), len(b[0, :])
-    b_code = np.zeros((K, T))
-    for k in range(K):
-        for t in range(T):
-            if t == 0:
-                b_code[k][t] = b[k][t]
-            else:
-                b_code[k][t] = b[k][t] - b[k][t - 1]
-    return b_code
-
-
-@ njit()
-def decoding(b, B_last):  # 解码
-    K, T = len(b), len(b[0, :])
-    b_decode = b
-    for t in range(T):  # 解码（新增病床 -> 累计病床）
-        for k in range(K):
-            if t == 0:
-                b_decode[k][t] += B_last[k]
-            else:
-                b_decode[k][t] += b_decode[k][t - 1]
-    return b_decode
-
-
-def fitness_calculate(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
-                      , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q, b, c, eta
-                      , value_nature, tag=None):
-    T = len(b[0, :])
-    fitness = 0
-    S, E, A, Q, U, R, D = np.zeros((K, T + 1)), np.zeros((K, T + 1)), np.zeros((K, T + 1)), np.zeros((K, T + 1)) \
-        , np.zeros((K, T + 1)), np.zeros((K, T + 1)), np.zeros((K, T + 1))
-
-    for k in range(K):
-        S[k][0] = S_init[k]
-        E[k][0] = E_init[k]
-        A[k][0] = A_init[k]
-        Q[k][0] = Q_init[k]
-        U[k][0] = U_init[k]
-        R[k][0] = R_init[k]
-        D[k][0] = D_init[k]
-
-    for t in range(T + 1):
-        S_tem = S[:, t]  # 当期状态
-        E_tem = E[:, t]
-        A_tem = A[:, t]
-        U_tem = U[:, t]
-
-        Q_tem = Q[:, t]
-        R_tem = R[:, t]
-        D_tem = D[:, t]
-
-        S_nxt, E_nxt, A_nxt, Q_nxt, U_nxt, R_nxt, D_nxt = \
-            allocation_epidemic_function(K, 1, S_tem, E_tem, A_tem, Q_tem, U_tem
-                                     , R_tem, D_tem, N, sigma_hat, beta_e, beta_a
-                                     , beta_u, alpha, delta_a, delta_q, delta_u
-                                     , gamma_a, gamma_q, gamma_u, p, q
-                                     , b[:, t:t+1], c[:, t:t+1], eta)
-
-        if t != T:  # 更新下一期
-            S[:, t + 1] = S_nxt[:, 1]  # S_nxt第一列是本期，第二列是下一期
-            E[:, t + 1] = E_nxt[:, 1]
-            A[:, t + 1] = A_nxt[:, 1]
-            Q[:, t + 1] = Q_nxt[:, 1]
-            U[:, t + 1] = U_nxt[:, 1]
-            R[:, t + 1] = R_nxt[:, 1]
-            D[:, t + 1] = D_nxt[:, 1]
-
-    for t in range(T):
-        for k in range(K):
-            fitness += S[k][t] - S[k][t + 1]
-    fitness = value_nature - fitness
-
-    if tag:
-        return S, E, A, Q, U, R, D
-
-    return fitness
 
 
 def selection_roulette(fitness_list, population, tag=None):  # 选择策略——轮盘赌
@@ -685,47 +684,51 @@ def mutation_polynomial(K, T, population_new, mutation_eta, mutation_p):
         mutation_k_b = random.randint(0, K - 1)  # 随机产生一区域，对它进行b资源变异
         mutation_k_c = random.randint(0, K - 1)  # 随机产生一区域，对它进行c资源变异
 
-        v = population_new_2[po]['b'][mutation_k_b][mutation_t]  # 首先，对b进行变异
-        u, l = b_up_list[mutation_k_b][mutation_t], b_low_list[mutation_k_b][mutation_t]
-        if u == l:
-            delta_1, delta_2 = 0, 0
-        else:
-            delta_1 = (v - l) / (u - l)
-            delta_2 = (u - v) / (u - l)
-        rand = random.random()
-        if rand <= 0.5:
-            delta = (
-                    2 * rand + (1 - 2 * rand) * ((1 - delta_1) ** (mutation_eta + 1))
-                    ) ** (1 / (mutation_eta + 1)) - 1
-        else:
-            delta = 1 - (
-                    2 * (1 - rand) + 2 * (rand - 0.5) * ((1 - delta_2) ** (mutation_eta + 1))
-                    ) ** (1 / (mutation_eta + 1))
-        v = v + delta * (u - l)
-        v = min(u, max(v, l))  # 有的代码会加这一条
-        v = max(v, 0)  # 同样，防止小于0
-        population_new_2[po]['b'][mutation_k_b][mutation_t] = v
+        b_or_c = random.randint(1, 3)  # 三等分情况
+
+        if b_or_c == 1 or b_or_c == 3:
+            v = population_new_2[po]['b'][mutation_k_b][mutation_t]  # 首先，对b进行变异
+            u, l = b_up_list[mutation_k_b][mutation_t], b_low_list[mutation_k_b][mutation_t]
+            if u == l:
+                delta_1, delta_2 = 0, 0
+            else:
+                delta_1 = (v - l) / (u - l)
+                delta_2 = (u - v) / (u - l)
+            rand = random.random()
+            if rand <= 0.5:
+                delta = (
+                        2 * rand + (1 - 2 * rand) * ((1 - delta_1) ** (mutation_eta + 1))
+                        ) ** (1 / (mutation_eta + 1)) - 1
+            else:
+                delta = 1 - (
+                        2 * (1 - rand) + 2 * (rand - 0.5) * ((1 - delta_2) ** (mutation_eta + 1))
+                        ) ** (1 / (mutation_eta + 1))
+            v = v + delta * (u - l)
+            v = min(u, max(v, l))  # 有的代码会加这一条
+            v = max(v, 0)  # 同样，防止小于0
+            population_new_2[po]['b'][mutation_k_b][mutation_t] = v
         '--------------------'
-        v = population_new_2[po]['c'][mutation_k_c][mutation_t]  # 其次，对c进行变异
-        u, l = c_up_list[mutation_k_c][mutation_t], c_low_list[mutation_k_c][mutation_t]
-        if u == l:
-            delta_1, delta_2 = 0, 0
-        else:
-            delta_1 = (v - l) / (u - l)
-            delta_2 = (u - v) / (u - l)
-        rand = random.random()
-        if rand <= 0.5:
-            delta = (
-                    2 * rand + (1 - 2 * rand) * ((1 - delta_1) ** (mutation_eta + 1))
-                    ) ** (1 / (mutation_eta + 1)) - 1
-        else:
-            delta = 1 - (
-                    2 * (1 - rand) + 2 * (rand - 0.5) * ((1 - delta_2) ** (mutation_eta + 1))
-                    ) ** (1 / (mutation_eta + 1))
-        v = v + delta * (u - l)
-        v = min(u, max(v, l))  # 有的代码会加这一条
-        v = max(v, 0)  # 同样，防止小于0
-        population_new_2[po]['c'][mutation_k_c][mutation_t] = v
+        if b_or_c == 2 or b_or_c == 3:
+            v = population_new_2[po]['c'][mutation_k_c][mutation_t]  # 其次，对c进行变异
+            u, l = c_up_list[mutation_k_c][mutation_t], c_low_list[mutation_k_c][mutation_t]
+            if u == l:
+                delta_1, delta_2 = 0, 0
+            else:
+                delta_1 = (v - l) / (u - l)
+                delta_2 = (u - v) / (u - l)
+            rand = random.random()
+            if rand <= 0.5:
+                delta = (
+                        2 * rand + (1 - 2 * rand) * ((1 - delta_1) ** (mutation_eta + 1))
+                        ) ** (1 / (mutation_eta + 1)) - 1
+            else:
+                delta = 1 - (
+                        2 * (1 - rand) + 2 * (rand - 0.5) * ((1 - delta_2) ** (mutation_eta + 1))
+                        ) ** (1 / (mutation_eta + 1))
+            v = v + delta * (u - l)
+            v = min(u, max(v, l))  # 有的代码会加这一条
+            v = max(v, 0)  # 同样，防止小于0
+            population_new_2[po]['c'][mutation_k_c][mutation_t] = v
 
     return population_new_2
 
@@ -811,7 +814,7 @@ def repair_gradient_based(K, T, b, c, repair_p, repair_iteration, b_hat, C, lamb
 
 def mutation_fit(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
                  , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q, eta, value_nature
-                 , population, B_last, b_hat, C, lambda_b, lambda_c):
+                 , population, B_last, b_hat, C, lambda_b, lambda_c, b_or_c=2):
     # 精确变异算子：根据净增长的边际效应确定（每次进行一个个体）
     T = len(population['b'][0, :])  # 决策时期数（全总共29期）
     population_new = {'b': np.zeros((K, T)), 'c': np.zeros((K, T)), 'fitness': 0}
@@ -831,74 +834,137 @@ def mutation_fit(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, s
 
     rt = random.randint(0, T - 1)  # 随机选取一期
     b_tem_, c_tem_ = np.zeros((K, T)), np.zeros((K, T))
-    b_tem_[:, :], c_tem_[:, :] = b_tem[:, :], c_tem[:, :]
-    marginal_total = np.zeros(K)
-    for kt in range(K):  # 每个区域计算一遍边际效应
-        b_tem_[kt][rt] += 10
-        # c_tem_[kt][rt] += 1000
-        S_, E_, A_, Q_, U_, R_, D_ = \
-            fitness_calculate(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
-                              , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q
-                              , b_tem_, c_tem_, eta, value_tem, tag=1)
-        increase_sequence_ = np.zeros((K, T))  # 增长列表
-        for t in range(T):
-            for k in range(K):
-                increase_sequence_[k][t] = S_[k][t] - S_[k][t + 1]  # 净增长
-        marginal_total[kt] = np.sum(increase_sequence[kt, rt:T]) - np.sum(increase_sequence_[kt, rt:T])  # 边际效应 = 差值
-        b_tem_[kt][rt] -= 10
-        # c_tem_[kt][rt] -= 1000  # 记得减回去
-    marginal_order = np.argsort(marginal_total)  # 按照边际效应大小，从小到大排序，对应的下标
+    b_tem_[:, :], c_tem_[:, :] = b_tem[:, :], c_tem[:, :]  # Mark一下：此时，b资源处于解码状态（累积量）
 
-    b_tem = coding(b_tem)  # 记得编码，变成更新量
-    if np.sum(b_tem[:, rt]) < b_hat[rt]:  # 如果资源未满，则补充满
-        gap_total = b_hat[rt] - np.sum(b_tem[:, rt])
-        # print(f'资源未充分利用，补充：{gap_total}')
-        for k in range(K - 1, -1, -1):  # 从边际效应最高的往前
-            # print(f':{marginal_order[k]}')
-            gap_tem = lambda_b * b_hat[rt] - b_tem[marginal_order[k]][rt]
-            if gap_total <= gap_tem:
-                # print(f'增加{gap_total}')
-                b_tem[marginal_order[k]][rt] += gap_total
-                gap_total = 0
+    # （1）对b资源进行边际效益变异
+    if b_or_c == 1 or b_or_c == 3:
+        marginal_total = np.zeros(K)
+        for kt in range(K):  # 每个区域计算一遍边际效应
+            b_tem_[kt][rt] += 5
+            # c_tem_[kt][rt] += 1000
+            S_, E_, A_, Q_, U_, R_, D_ = \
+                fitness_calculate(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
+                                  , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q
+                                  , b_tem_, c_tem_, eta, value_tem, tag=1)
+            increase_sequence_ = np.zeros((K, T))  # 增长列表
+            for t in range(T):
+                for k in range(K):
+                    increase_sequence_[k][t] = S_[k][t] - S_[k][t + 1]  # 净增长
+            marginal_total[kt] = np.sum(increase_sequence[kt, rt:T]) - np.sum(increase_sequence_[kt, rt:T])  # 边际效应 = 差值
+            b_tem_[kt][rt] -= 5
+            # c_tem_[kt][rt] -= 1000  # 记得减回去
+        marginal_order = np.argsort(marginal_total)  # 按照边际效应大小，从小到大排序，对应的下标
+
+        b_tem = coding(b_tem)  # 记得编码，变成更新量
+        if np.sum(b_tem[:, rt]) < b_hat[rt]:  # 如果资源未满，则补充满
+            gap_total = b_hat[rt] - np.sum(b_tem[:, rt])
+            # print(f'资源未充分利用，补充：{gap_total}')
+            for k in range(K - 1, -1, -1):  # 从边际效应最高的往前
+                # print(f':{marginal_order[k]}')
+                gap_tem = lambda_b * b_hat[rt] - b_tem[marginal_order[k]][rt]
+                if gap_total <= gap_tem:
+                    # print(f'增加{gap_total}')
+                    b_tem[marginal_order[k]][rt] += gap_total
+                    gap_total = 0
+                else:
+                    # print(f'增加{gap_tem}')
+                    b_tem[marginal_order[k]][rt] += gap_tem
+                    gap_total -= gap_tem
+                if gap_total == 0:
+                    break
+
+        num_b = 5  # 每次补充/交换，不超过10个b资源
+        left, right = 0, K - 1  # 左对应边际效应最低的，右对应边际效应最高的
+        while left < right:
+            left_index, right_index = marginal_order[left], marginal_order[right]
+            if b_tem[left_index][rt] == 0:  # 没有足够资源交换，往后走一个
+                left += 1
+                continue
+            if b_tem[right_index][rt] == b_hat[rt] * lambda_b:  # 达到上限不能接收资源，往前走一个
+                right -= 1
+                continue
+
+            num = min(b_tem[left_index][rt], b_hat[rt] * lambda_b - b_tem[right_index][rt])  # 两区域之间最多可以交换的数量
+            if num >= num_b:
+                b_tem[left_index][rt] -= num_b
+                b_tem[right_index][rt] += num_b
+                num_b = 0
             else:
-                # print(f'增加{gap_tem}')
-                b_tem[marginal_order[k]][rt] += gap_tem
-                gap_total -= gap_tem
-            if gap_total == 0:
+                b_tem[left_index][rt] -= num
+                b_tem[right_index][rt] += num
+                num_b -= num
+
+            if num_b == 0:
                 break
 
-    num_b = 10  # 每次补充/交换10个b资源
-    left, right = 0, K - 1  # 左对应边际效应最低的，右对应边际效应最高的
-    while left < right:
-        left_index, right_index = marginal_order[left], marginal_order[right]
-        if b_tem[left_index][rt] == 0:  # 没有足够资源交换，往后走一个
-            left += 1
-            continue
-        if b_tem[right_index][rt] == b_hat[rt] * lambda_b:  # 达到上限不能接收资源，往前走一个
-            right -= 1
-            continue
+        b_tem = decoding(b_tem, B_last)  # 再变回解码状态
 
-        num = min(b_tem[left_index][rt], b_hat[rt] * lambda_b - b_tem[right_index][rt])  # 两区域之间最多可以交换的数量
-        if num >= num_b:
-            b_tem[left_index][rt] -= num_b
-            b_tem[right_index][rt] += num_b
-            num_b = 0
-        else:
-            b_tem[left_index][rt] -= num
-            b_tem[right_index][rt] += num
-            num_b -= num
+    # （2）对c资源进行边际效益变异
+    if b_or_c == 2 or b_or_c == 3:
+        marginal_total = np.zeros(K)
+        for kt in range(K):  # 每个区域计算一遍边际效应
+            # b_tem_[kt][rt] += 10
+            c_tem_[kt][rt] += 1000
+            S_, E_, A_, Q_, U_, R_, D_ = \
+                fitness_calculate(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
+                                  , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q
+                                  , b_tem_, c_tem_, eta, value_tem, tag=1)
+            increase_sequence_ = np.zeros((K, T))  # 增长列表
+            for t in range(T):
+                for k in range(K):
+                    increase_sequence_[k][t] = S_[k][t] - S_[k][t + 1]  # 净增长
+            marginal_total[kt] = np.sum(increase_sequence[kt, rt:T]) - np.sum(increase_sequence_[kt, rt:T])  # 边际效应 = 差值
+            # b_tem_[kt][rt] -= 10
+            c_tem_[kt][rt] -= 1000  # 记得减回去
+        marginal_order = np.argsort(marginal_total)  # 按照边际效应大小，从小到大排序，对应的下标
 
-        if num_b == 0:
-            break
+        if np.sum(c_tem[:, rt]) < C[rt]:  # 如果资源未满，则补充满
+            gap_total = C[rt] - np.sum(c_tem[:, rt])
+            # print(f'资源未充分利用，补充：{gap_total}')
+            for k in range(K - 1, -1, -1):  # 从边际效应最高的往前
+                # print(f':{marginal_order[k]}')
+                gap_tem = lambda_c * C[rt] - c_tem[marginal_order[k]][rt]
+                if gap_total <= gap_tem:
+                    # print(f'增加{gap_total}')
+                    c_tem[marginal_order[k]][rt] += gap_total
+                    gap_total = 0
+                else:
+                    # print(f'增加{gap_tem}')
+                    c_tem[marginal_order[k]][rt] += gap_tem
+                    gap_total -= gap_tem
+                if gap_total == 0:
+                    break
 
-    # 预留：c资源同样
+        num_c = 1000  # 每次补充/交换，不超过1000个c资源
+        left, right = 0, K - 1  # 左对应边际效应最低的，右对应边际效应最高的
+        while left < right:
+            left_index, right_index = marginal_order[left], marginal_order[right]
+            if c_tem[left_index][rt] == 0:  # 没有足够资源交换，往后走一个
+                left += 1
+                continue
+            if c_tem[right_index][rt] == C[rt] * lambda_c:  # 达到上限不能接收资源，往前走一个
+                right -= 1
+                continue
+
+            num = min(c_tem[left_index][rt], C[rt] * lambda_c - c_tem[right_index][rt])  # 两区域之间最多可以交换的数量
+            if num >= num_c:
+                c_tem[left_index][rt] -= num_c
+                c_tem[right_index][rt] += num_c
+                num_c = 0
+            else:
+                c_tem[left_index][rt] -= num
+                c_tem[right_index][rt] += num
+                num_c -= num
+
+            if num_c == 0:
+                break
 
     # 创建并返回新的变异population
-    population_new['b'][:, :], population_new['c'][:, :] = b_tem[:, :], c_tem[:, :]
-    b_tem = decoding(b_tem, B_last)
     fitness = \
         fitness_calculate(K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
                           , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q
                           , b_tem, c_tem, eta, value_tem)
     population_new['fitness'] = fitness
+    b_tem = coding(b_tem)  # 编码
+    population_new['b'][:, :], population_new['c'][:, :] = b_tem[:, :], c_tem[:, :]
     return population_new

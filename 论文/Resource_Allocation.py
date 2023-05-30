@@ -3,6 +3,7 @@
 """
 import math
 import time
+import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 import numpy as np
 from numba import njit
@@ -13,6 +14,8 @@ from Myopic_Model import myopic_model
 from Benchmark import benchmark
 from ADP import adp
 from GAQN import GAQN_Method
+from GA_Basic_Function import coding
+from VNS import Variable_Neighborhood_Search
 
 
 np.set_printoptions(suppress=True)
@@ -21,10 +24,10 @@ np.set_printoptions(suppress=True)
 class Resource_Allocation:
     def __init__(self):
         self.K = 9  # 地区数量
-        self.T = 28  # 资源分配时间跨度
+        self.T = 60  # 资源分配时间跨度
         self.sigma_hat = np.zeros((self.K, self.K))  # 区域之间的地理系数，矩阵
         '---------------------------------'
-        self.book = load_workbook('Fitting_Result.xlsx')
+        self.book = load_workbook('Fitting_Result_v2.xlsx')
         self.group_initial = self.book[f'群体']
         self.para_initial = self.book[f'参数']
         self.info = self.book[f'区域信息']
@@ -92,16 +95,16 @@ class Resource_Allocation:
         self.eta = 0.5  # 病床有效率
         self.b_hat = np.zeros(self.T + 1)  # 每期新增病床（注意别太大，容易问题不可行：b_last>U，累计病床过剩问题！！）
         for i in range(self.T + 1):
-            self.b_hat[i] = 700
+            self.b_hat[i] = 500
         self.lambda_b = 0.2  # 新增病床部署率（防止只发放给某一个区域）
         self.C = np.zeros(self.T + 1)  # 每期新增核酸检测（有几个区域系数为正，则不会分配给该区域，即使资源浪费）
         for i in range(self.T + 1):
             self.C[i] = 500000
-        self.lambda_c = 0.2  # 新增核酸检测部署率（防止只发放给某一个区域）
-        self.M = 150  # ADP算法，迭代修正次数
-        self.L = 30  # ADP算法，单次修正，样本量
+        self.lambda_c = 0.2      # 新增核酸检测部署率（防止只发放给某一个区域）
+        self.M = 50  # ADP算法，迭代修正次数
+        self.L = 20  # ADP算法，单次修正，样本量
         self.O = 5 * self.K  # 状态变量（特征值）数量（没有参与任何计算，仅供展示）
-        self.W = 30  # 神经元个数
+        self.W = 20  # 神经元个数
         self.delta = 99999999  # 足够大的正数（没有参与任何计算，仅供展示）
         self.select_ratio = 0  # ADP算法被选择的轮盘赌，样本数上限= 此参数
         self.norm_tag = 'standard_norm'  # 归一化标准：None、'max_norm'、'standard_norm'
@@ -133,7 +136,7 @@ class Resource_Allocation:
 
         if tag == 'Myopic_LP' or tag == 'all':
             s_time = time.time()
-            b_myopic, c_myopic, value_myopic, S_myopic, E_myopic, A_myopic, U_myopic \
+            b_myopic, c_myopic, value_myopic, S_myopic, E_myopic, A_myopic, U_myopic, b_bar_myopic \
                 = myopic_lp(self.K, self.T, self.S_initial, self.E_initial
                             , self.A_initial, self.Q_initial, self.U_initial
                             , self.R_initial, self.D_initial, self.N, self.sigma_hat
@@ -157,7 +160,7 @@ class Resource_Allocation:
                             , self.delta_a, self.delta_q, self.delta_u
                             , self.gamma_a, self.gamma_q, self.gamma_u
                             , self.p, self.q, self.eta, self.b_hat, self.C
-                            , 'Benchmark_Average', np.zeros(self.K), re_tag=1)
+                            , 'Benchmark_Average', np.zeros(self.K), self.lambda_b, self.lambda_c, re_tag=1)
             e_time = time.time()
             print(sum(value_BH_Aver), '=>', f'减少新增：{value_nature - sum(value_BH_Aver)}'
                                             f'，百分比：{(value_nature - sum(value_BH_Aver)) / value_nature}')
@@ -173,7 +176,7 @@ class Resource_Allocation:
                                                    , self.delta_a, self.delta_q, self.delta_u
                                                    , self.gamma_a, self.gamma_q, self.gamma_u
                                                    , self.p, self.q, self.eta, self.b_hat, self.C
-                                                   , 'Benchmark_N', np.zeros(self.K), re_tag=1)
+                                                   , 'Benchmark_N', np.zeros(self.K), self.lambda_b, self.lambda_c, re_tag=1)
             e_time = time.time()
             print(sum(value_BH_N), '=>', f'减少新增：{value_nature - sum(value_BH_N)}'
                                          f'，百分比：{(value_nature - sum(value_BH_N)) / value_nature}')
@@ -189,7 +192,7 @@ class Resource_Allocation:
                                                    , self.delta_a, self.delta_q, self.delta_u
                                                    , self.gamma_a, self.gamma_q, self.gamma_u
                                                    , self.p, self.q, self.eta, self.b_hat, self.C
-                                                   , 'Benchmark_U', np.zeros(self.K), re_tag=1)
+                                                   , 'Benchmark_U', np.zeros(self.K), self.lambda_b, self.lambda_c, re_tag=1)
             e_time = time.time()
             print(sum(value_BH_U), '=>', f'减少新增：{value_nature - sum(value_BH_U)}'
                                          f'，百分比：{(value_nature - sum(value_BH_U)) / value_nature}')
@@ -205,7 +208,7 @@ class Resource_Allocation:
                                                          , self.delta_a, self.delta_q, self.delta_u
                                                          , self.gamma_a, self.gamma_q, self.gamma_u
                                                          , self.p, self.q, self.eta, self.b_hat, self.C
-                                                         , 'Benchmark_U_new', np.zeros(self.K), self.E_initial_last, re_tag=1)
+                                                         , 'Benchmark_U_new', np.zeros(self.K), self.lambda_b, self.lambda_c, self.E_initial_last, re_tag=1)
             e_time = time.time()
             print(sum(value_BH_U_n), '=>', f'减少新增：{value_nature - sum(value_BH_U_n)}'
                                            f'，百分比：{(value_nature - sum(value_BH_U_n)) / value_nature}')
@@ -345,7 +348,7 @@ class Resource_Allocation:
             print(f'短视ADP算法运行时间：{e_time - s_time}s')
             print(b_ADP_Short, c_ADP_Short)
 
-        if tag == 'GAQN' or tag == 'all':
+        if tag == 'GAQN' or tag == 'allaa':
             s_time = time.time()
             GAQN_Method(self.K, self.T, self.S_initial, self.E_initial, self.A_initial, self.Q_initial, self.U_initial
                         , self.R_initial, self.D_initial, self.N, self.sigma_hat, self.beta_e, self.beta_a
@@ -356,6 +359,24 @@ class Resource_Allocation:
                         , value_nature_list, value_nature_list_region)
             e_time = time.time()
             print(f'GA算法运行时间：{e_time - s_time}s')
+
+        if tag == 'VNS' or tag == 'all':
+            s_time = time.time()
+            b_tem = coding(b_bar_myopic)  # 因为，VNS要传入编码后的b资源（分配量）
+            B_last = np.zeros(self.K)
+            VNS_result = Variable_Neighborhood_Search(self.K, self.S_initial, self.E_initial, self.A_initial
+                                                      , self.Q_initial, self.U_initial, self.R_initial, self.D_initial
+                                                      , self.N, self.sigma_hat, self.beta_e, self.beta_a, self.beta_u
+                                                      , self.alpha, self.delta_a, self.delta_q, self.delta_u
+                                                      , self.gamma_a, self.gamma_q, self.gamma_u, self.p, self.q
+                                                      , self.eta, value_nature_list_region, b_tem, c_myopic, B_last
+                                                      , self.b_hat, self.C, self.lambda_b, self.lambda_c, b_myopic)
+            e_time = time.time()
+            # print(VNS_result.b_final)
+            # print(VNS_result.c_final)
+            print(value_nature - VNS_result.fitness_final, '=>', f'减少新增：{VNS_result.fitness_final}'
+                                                           f'，百分比：{VNS_result.fitness_final / value_nature}')
+            print(f'VNS算法运行时间：{e_time - s_time}s')
 
 
 @njit()
