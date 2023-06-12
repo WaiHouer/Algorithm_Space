@@ -2,10 +2,12 @@
 变邻域搜索算法
 """
 import random
+import time
 import numpy as np
 from GA_Basic_Function import coding, decoding, fitness_calculate
 from Allocation_Epidemic_Function import allocation_epidemic_function
 import math
+import matplotlib.pyplot as plt
 
 
 # random.seed(2333)
@@ -16,6 +18,7 @@ class Variable_Neighborhood_Search:
     def __init__(self, K, S_init, E_init, A_init, Q_init, U_init, R_init, D_init, N, sigma_hat, beta_e, beta_a
                  , beta_u, alpha, delta_a, delta_q, delta_u, gamma_a, gamma_q, gamma_u, p, q, eta, value_nature
                  , b_bar_init, c_init, B_last, b_hat, C, lambda_b, lambda_c, b_init):
+        self.ttt = time.time()
         self.K = K
         self.S_init, self.E_init, self.A_init, self.Q_init = S_init, E_init, A_init, Q_init
         self.U_init, self.R_init, self.D_init = U_init, R_init, D_init
@@ -30,20 +33,24 @@ class Variable_Neighborhood_Search:
         self.lambda_b, self.lambda_c = lambda_b, lambda_c
         self.b_init = b_init  # 使用量（全量）
 
-        self.iter = 200  # 变邻域搜索迭代次数
+        self.iter = 50  # 变邻域搜索迭代次数
         self.b_final, self.c_final, self.fitness_final = np.zeros_like(self.b_init), np.zeros_like(self.c_init), 0
         self.b_bar_final = np.zeros_like(self.b_bar_init)
 
-        self.sol_num = 3  # 并行计算数量
-        self.num_b = 5  # b资源，单时期内边际效用计算量
-        self.num_c = 5000  # c资源，单时期内边际效用计算量
-        self.t_num_b = 50  # b资源，双时期转移边际量
-        self.t_num_c = 500  # c资源，双时期转移边际量
-        self.local_iter = 10  # 局部搜索的迭代上限
+        self.sol_num = 2  # 并行计算数量
+        self.num_b = 5  # b资源，单时期内边际效用计算量（1%）
+        self.num_c = 5000  # c资源，单时期内边际效用计算量（1%）
+        self.t_num_b = 5  # b资源，双时期转移边际量（1%）
+        self.t_num_c = 5000  # c资源，双时期转移边际量（1%）
+        self.local_iter = 5  # 局部搜索的迭代上限
         self.shake_iter = 5  # 超过若干次的变邻域搜索迭代，无改进的话，就进行扰动
         self.difference = False  # 是否添加插值运算解
 
+        self.fitness_list = [0 for i in range(self.iter + 1)]  # 记录每次迭代fit（首位元素=myopic）
+        self.time_list = [0 for i in range(self.iter + 1)]  # 记录每次迭代时间（首位元素=0）
+
         self.algorithm()
+        # self.picture_iter()  # 画出迭代拐点图
 
     def algorithm(self):
         b_bar_best, c_best = np.zeros_like(self.b_bar_init), np.zeros_like(self.c_init)  # 临时最优解
@@ -56,8 +63,6 @@ class Variable_Neighborhood_Search:
 
         fitness = 0
         value_tem = np.sum(self.value_nature[:, :])  # 自然状态下群体，用于计算适应度时相减
-        # print(b_bar)
-        # print(c)
 
         shake_iter = 0  # 记录当前多少次迭代无改进
         for i in range(self.iter):  # 变邻域搜索迭代
@@ -67,7 +72,9 @@ class Variable_Neighborhood_Search:
                                   , self.D_init, self.N, self.sigma_hat, self.beta_e, self.beta_a, self.beta_u
                                   , self.alpha, self.delta_a, self.delta_q, self.delta_u, self.gamma_a, self.gamma_q
                                   , self.gamma_u, self.p, self.q, b, c, self.eta, value_tem)
-            # print(f'当前解的适应度：{fitness}')
+            if i == 0:  # 记录初始值
+                self.fitness_list[0] = fitness
+                self.time_list[0] = 0
 
             neighborhood_out = 1  # 外层邻域结构，初始化
             sol_list_out = [{'b_bar_out': np.zeros_like(b_bar), 'b_out': np.zeros_like(b)
@@ -288,7 +295,11 @@ class Variable_Neighborhood_Search:
                 self.b_final[:, :] = b[:, :]
                 self.c_final[:, :] = c[:, :]
                 self.fitness_final = fitness
+
+            self.fitness_list[i + 1] = self.fitness_final  # 记录迭代结果
+            self.time_list[i + 1] = time.time() - self.ttt
             print(self.fitness_final)
+            # print(self.b_bar_final)
 
             tag = 0
             if fitness > fitness_best:  # 判断【临时最优解】
@@ -371,7 +382,7 @@ class Variable_Neighborhood_Search:
         margin_order = np.argsort(margin)  # 按照边际效应大小，从小到大排序
 
         # 针对分配量，进行资源转移操作
-        num_b = random.randint(1, self.b_hat[rt])  # 每次转移，不超过num_b个b资源
+        num_b = random.randint(0, self.b_hat[rt])  # 每次转移，不超过num_b个b资源
         left, right = 0, self.K - 1  # 左对应边际效应最低的，右对应边际效应最高的
         while left < right:
             left_index, right_index = margin_order[left], margin_order[right]
@@ -437,18 +448,12 @@ class Variable_Neighborhood_Search:
                     break
 
         # 针对分配量，进行资源转移操作
-        num_b = random.randint(1, self.b_hat[rt])  # 每次转移，不超过num_b个b资源
+        num_b = random.randint(0, self.b_hat[rt])  # 每次转移，不超过num_b个b资源
         # 两区域之间最多可以交换的数量
         num = min(b_bar_tem[k_sub][rt], self.b_hat[rt] * self.lambda_b - b_bar_tem[k_add][rt])
-        num = random.randint(1, num)
+        num = random.randint(0, num)
         b_bar_tem[k_sub][rt] -= num
         b_bar_tem[k_add][rt] += num
-        # if num >= num_b:
-        #     b_bar_tem[k_sub][rt] -= num_b
-        #     b_bar_tem[k_add][rt] += num_b
-        # else:
-        #     b_bar_tem[k_sub][rt] -= num
-        #     b_bar_tem[k_add][rt] += num
 
         # 目前为止，得到了新的分配量解，以下进行修复操作，让使用量配合新的分配量，且满足约束
         b_bar_new = np.zeros_like(b_bar_tem)
@@ -494,7 +499,7 @@ class Variable_Neighborhood_Search:
         margin_order = np.argsort(margin)  # 按照边际效应大小，从小到大排序
 
         # 针对分配量，进行资源转移操作
-        num_c = random.randint(1, self.C[rt])  # 每次转移，不超过num_c个c资源
+        num_c = random.randint(0, self.C[rt])  # 每次转移，不超过num_c个c资源
         left, right = 0, self.K - 1  # 左对应边际效应最低的，右对应边际效应最高的
         while left < right:
             left_index, right_index = margin_order[left], margin_order[right]
@@ -560,10 +565,10 @@ class Variable_Neighborhood_Search:
                     break
 
         # 针对分配量，进行资源转移操作
-        num_c = random.randint(1, self.C[rt])  # 每次转移，不超过num_c个c资源
+        num_c = random.randint(0, self.C[rt])  # 每次转移，不超过num_c个c资源
         # 两区域之间最多可以交换的数量
         num = min(c_tem[k_sub][rt], self.C[rt] * self.lambda_c - c_tem[k_add][rt])
-        num = random.randint(1, num)
+        num = random.randint(0, num)
         c_tem[k_sub][rt] -= num
         c_tem[k_add][rt] += num
         # if num >= num_c:
@@ -760,6 +765,17 @@ class Variable_Neighborhood_Search:
         b_tem[:, :] = self.repair(b_1, decoding(b_bar_new, self.B_last), c_tem, 0, T)
 
         return b_bar_tem, b_tem, c_tem
+
+    def picture_iter(self):
+        print(f'迭代过程花费时间如下：')
+        print(self.time_list)
+        print(f'迭代过程结果如下：')
+        print(self.fitness_list)
+
+        y = self.fitness_list
+        x = list(range(len(y)))
+        plt.plot(x, y)
+        plt.show()
 
     def roulette(self, sol_list_out, base_f):
         b_bar_tem = np.zeros_like(sol_list_out[0]['b_bar_out'])

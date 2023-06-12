@@ -96,11 +96,15 @@ class Resource_Allocation:
         self.b_hat = np.zeros(self.T + 1)  # 每期新增病床（注意别太大，容易问题不可行：b_last>U，累计病床过剩问题！！）
         for i in range(self.T + 1):
             self.b_hat[i] = 500
-        self.lambda_b = 0.2  # 新增病床部署率（防止只发放给某一个区域）
+            # if i % 7 == 0:
+            #     self.b_hat[i] = 3500
+        self.lambda_b = 0.5  # 新增病床部署率（防止只发放给某一个区域）
         self.C = np.zeros(self.T + 1)  # 每期新增核酸检测（有几个区域系数为正，则不会分配给该区域，即使资源浪费）
         for i in range(self.T + 1):
             self.C[i] = 500000
-        self.lambda_c = 0.2      # 新增核酸检测部署率（防止只发放给某一个区域）
+            # if i % 7 == 0:
+            #     self.C[i] = 3500000
+        self.lambda_c = 0.5  # 新增核酸检测部署率（防止只发放给某一个区域）
         self.M = 50  # ADP算法，迭代修正次数
         self.L = 20  # ADP算法，单次修正，样本量
         self.O = 5 * self.K  # 状态变量（特征值）数量（没有参与任何计算，仅供展示）
